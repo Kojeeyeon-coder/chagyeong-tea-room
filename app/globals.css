@@ -1,0 +1,106 @@
+@import "tailwindcss";
+
+:root {
+  --cream: #f5f2ea;
+  --paper: #fafaf7;
+  --sage: #b5c7a7;
+  --sage-dark: #566b58;
+  --wood: #8b6b52;
+  --ink: #27312e;
+  --line: rgba(67, 77, 69, 0.16);
+}
+
+* { box-sizing: border-box; }
+html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; background: var(--cream); color: var(--ink); }
+body { font-family: Pretendard, "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif; }
+button { font: inherit; }
+button:focus-visible { outline: 2px solid #617760; outline-offset: 3px; }
+
+.chagyeong-shell, .scene { position: fixed; inset: 0; }
+.scene canvas { touch-action: none; }
+.topbar { position: fixed; top: 20px; left: 22px; right: 22px; z-index: 30; display: flex; align-items: center; justify-content: space-between; pointer-events: none; }
+.brand-lockup, .room-pills, .identity-card, .visitor-card, .notice, .action-dock, .tea-panel { border: 1px solid rgba(255,255,255,.56); background: rgba(250,250,247,.78); box-shadow: 0 16px 45px rgba(42,48,43,.10); backdrop-filter: blur(18px); }
+.brand-lockup { display: flex; gap: 10px; align-items: center; border-radius: 999px; padding: 8px 14px 8px 9px; }
+.brand-lockup strong { display: block; font-family: Georgia, "Noto Serif KR", serif; font-size: 17px; letter-spacing: .05em; }
+.brand-lockup small { color: #788177; font: 10px/1 Georgia, serif; letter-spacing: .22em; }
+.mini-seal, .brand-seal { display: grid; place-items: center; border-radius: 50%; background: #60765f; color: #f7f3e8; }
+.mini-seal { width: 31px; height: 31px; }
+.room-pills { display: flex; gap: 4px; padding: 5px; border-radius: 999px; }
+.room-pills span { display: flex; align-items: center; gap: 6px; padding: 8px 11px; color: #58645d; font-size: 12px; white-space: nowrap; }
+.connection-dot::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: #71a276; box-shadow: 0 0 0 4px rgba(113,162,118,.12); }
+.connection-reconnecting::before { background: #c69356; }
+
+.identity-card { position: fixed; left: 22px; top: 88px; z-index: 30; display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-radius: 15px; pointer-events: none; }
+.identity-card small, .ritual-status small { display: block; font-size: 10px; color: #818a82; }
+.identity-card strong, .ritual-status strong { display: block; margin-top: 2px; font-size: 13px; }
+.visitor-card { position: fixed; right: 22px; top: 88px; z-index: 29; display: grid; gap: 6px; min-width: 155px; border-radius: 15px; padding: 11px 13px; pointer-events: none; }
+.visitor-card small { color: #818a82; font-size: 9px; }
+.visitor-card span { display: flex; align-items: center; gap: 7px; color: #59645e; font-size: 11px; }
+.visitor-card i { width: 6px; height: 6px; border-radius: 50%; background: #89a386; }
+.notice { position: fixed; z-index: 35; left: 50%; bottom: 91px; transform: translateX(-50%); border-radius: 999px; padding: 10px 16px; font-size: 12px; color: #59645e; pointer-events: none; white-space: nowrap; }
+.action-dock { position: fixed; left: 50%; bottom: 22px; z-index: 30; transform: translateX(-50%); display: flex; align-items: center; gap: 4px; padding: 6px; border-radius: 999px; }
+.action-dock button { display: flex; align-items: center; gap: 7px; padding: 10px 14px; border: 0; border-radius: 999px; background: transparent; color: #445148; cursor: pointer; }
+.action-dock button:hover { background: rgba(181,199,167,.34); }
+.action-dock button:disabled { opacity: .45; cursor: not-allowed; }
+.control-hint { display: flex; align-items: center; gap: 6px; padding: 0 10px; color: #788177; font-size: 11px; }
+
+.tea-panel { position: fixed; z-index: 32; right: 22px; top: 88px; bottom: 22px; width: min(360px, calc(100vw - 44px)); overflow: auto; border-radius: 24px; padding: 22px; scrollbar-width: thin; }
+.panel-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.eyebrow { margin: 0 0 6px; color: #758073; font-size: 10px; font-weight: 700; letter-spacing: .18em; text-transform: uppercase; }
+.panel-heading h2 { margin: 0; font-family: Georgia, "Noto Serif KR", serif; font-size: 21px; font-weight: 500; }
+.seat-label { border-radius: 999px; padding: 6px 9px; background: rgba(181,199,167,.28); color: #607260; font-size: 10px; white-space: nowrap; }
+.tea-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 7px; margin-top: 18px; }
+.tea-grid button { position: relative; min-height: 58px; border: 1px solid var(--line); border-radius: 13px; background: rgba(255,255,255,.48); color: #59635d; cursor: pointer; }
+.tea-grid button::before { content: ""; position: absolute; left: 50%; top: 8px; width: 5px; height: 5px; transform: translateX(-50%); border-radius: 50%; background: var(--tea-color); }
+.tea-grid button span { display: block; margin-top: 7px; color: #8b918a; font: 10px Georgia, serif; }
+.tea-grid button strong { font-size: 11px; }
+.tea-grid button.selected, .teaware-list button.selected { border-color: #7f967a; background: rgba(181,199,167,.3); box-shadow: inset 0 0 0 1px rgba(127,150,122,.24); }
+.tea-grid button:disabled, .teaware-list button:disabled { cursor: not-allowed; opacity: .58; }
+.tea-note { display: flex; align-items: center; gap: 7px; margin: 10px 2px 18px; color: #777f79; font-size: 11px; }
+.tea-note i { width: 8px; height: 8px; border-radius: 50%; }
+.field-label { display: block; margin-bottom: 8px; color: #667269; font-size: 11px; font-weight: 700; }
+.teaware-list { display: grid; gap: 7px; }
+.teaware-list button { display: flex; align-items: center; justify-content: space-between; gap: 14px; width: 100%; border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; background: rgba(255,255,255,.4); color: #4f5a53; text-align: left; cursor: pointer; }
+.teaware-list strong { font-size: 12px; white-space: nowrap; }
+.teaware-list small { color: #8a908b; font-size: 9px; text-align: right; }
+.ritual-status { display: flex; align-items: center; gap: 10px; margin-top: 16px; border-top: 1px solid var(--line); padding-top: 15px; }
+.ritual-orb { width: 28px; height: 28px; border-radius: 50%; background: #e8e4da; box-shadow: inset 0 0 0 7px rgba(255,255,255,.5); }
+.ritual-brewing, .ritual-serving, .ritual-sipping { background: #9eb18e; animation: breathe 1.8s ease-in-out infinite; }
+.ritual-complete { background: #d7b77b; }
+.primary-button { border: 0; border-radius: 999px; padding: 12px 18px; background: #617760; color: white; font-weight: 700; cursor: pointer; box-shadow: 0 8px 22px rgba(56,79,60,.2); }
+.ritual-button { width: 100%; margin-top: 15px; }
+
+.entry-screen, .fallback-screen { position: fixed; inset: 0; display: grid; place-items: center; overflow: hidden; background: linear-gradient(145deg, #edf1e8, #d9e3d4 58%, #c7d3c3); }
+.entry-screen::before, .entry-screen::after { content: ""; position: absolute; border-radius: 50%; filter: blur(2px); opacity: .45; background: #faf8ef; }
+.entry-screen::before { width: 54vw; height: 54vw; left: -20vw; top: -25vw; }
+.entry-screen::after { width: 34vw; height: 34vw; right: -8vw; bottom: -18vw; }
+.entry-card, .fallback-card { position: relative; z-index: 2; width: min(430px, calc(100vw - 40px)); padding: 46px 36px; border: 1px solid rgba(255,255,255,.66); border-radius: 30px; background: rgba(250,250,247,.72); box-shadow: 0 30px 80px rgba(58,74,61,.13); text-align: center; backdrop-filter: blur(22px); }
+.brand-seal { width: 52px; height: 52px; margin: 0 auto 20px; }
+.entry-card h1, .fallback-card h1 { margin: 4px 0 10px; font-family: Georgia, "Noto Serif KR", serif; font-size: clamp(26px, 5vw, 37px); font-weight: 500; letter-spacing: -.04em; }
+.entry-card > p:not(.eyebrow), .fallback-card p { margin: 0 0 24px; color: #6f796f; font-size: 13px; line-height: 1.7; }
+.loading-leaf { display: inline-block; color: #6d826a; animation: leaf 1.6s ease-in-out infinite; }
+.fallback-screen { background: #e8ece5; }
+
+@keyframes leaf { 50% { transform: translateY(-8px) rotate(45deg); opacity: .45; } }
+@keyframes breathe { 50% { transform: scale(.86); opacity: .7; } }
+
+@media (max-width: 760px) {
+  .topbar { top: 12px; left: 12px; right: 12px; }
+  .room-pills span:nth-child(2), .connection-dot { display: none; }
+  .identity-card { top: 68px; left: 12px; }
+  .visitor-card { display: none; }
+  .control-hint { display: none; }
+  .action-dock { bottom: 14px; max-width: calc(100vw - 24px); }
+  .action-dock button { padding: 10px 12px; font-size: 12px; }
+  .notice { bottom: 74px; max-width: calc(100vw - 32px); overflow: hidden; text-overflow: ellipsis; }
+  .tea-panel { left: 12px; right: 12px; top: auto; bottom: 72px; width: auto; max-height: 54vh; padding: 18px; border-radius: 22px; }
+  .tea-grid { grid-template-columns: repeat(7, minmax(45px, 1fr)); overflow-x: auto; }
+  .tea-grid button { min-width: 45px; }
+  .teaware-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .teaware-list button { display: block; }
+  .teaware-list small { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .001ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; }
+}
