@@ -46,6 +46,8 @@ function Lighting({ mode }: { mode: TimeOfDay }) {
 function CameraRig({ target, focus, moving, seatId }: { target: React.RefObject<THREE.Group | null>; focus: boolean; moving: boolean; seatId: string | null }) {
   const controls = useRef<any>(null);
   const aligned = useRef(false);
+  const activeSeat = seatId ? SEAT_POSITIONS.find((seat) => seat.id === seatId) : null;
+  const soloFocus = activeSeat?.kind === "solo" && focus;
   useFrame(({ camera }, delta) => {
     if (!controls.current || !target.current) return;
     const desired = target.current.position.clone();
@@ -54,17 +56,16 @@ function CameraRig({ target, focus, moving, seatId }: { target: React.RefObject<
     if (!aligned.current || focus || moving) {
       const distance = focus ? 4.9 : 6.2;
       const forward = new THREE.Vector3(Math.sin(target.current.rotation.y), 0, Math.cos(target.current.rotation.y));
-      const activeSeat = seatId ? SEAT_POSITIONS.find((seat) => seat.id === seatId) : null;
-      const cameraTarget = activeSeat?.kind === "solo" && focus
-        ? desired.clone().add(forward.multiplyScalar(1.05)).add(new THREE.Vector3(0, 0, 2.4))
+      const cameraTarget = soloFocus
+        ? desired.clone().add(forward.multiplyScalar(1.4))
         : desired.clone().add(forward.multiplyScalar(focus ? distance : -distance));
-      cameraTarget.y += focus ? 2.55 : 5.15;
+      cameraTarget.y += soloFocus ? 1.65 : focus ? 2.55 : 5.15;
       camera.position.lerp(cameraTarget, 1 - Math.exp(-delta * (focus ? 3.2 : 2.2)));
       aligned.current = true;
     }
     controls.current.update();
   });
-  return <OrbitControls ref={controls} makeDefault enableDamping dampingFactor={0.08} enablePan={false} minDistance={focus ? 4 : 6} maxDistance={18} minPolarAngle={0.45} maxPolarAngle={1.2} rotateSpeed={0.55} zoomSpeed={0.7} />;
+  return <OrbitControls ref={controls} makeDefault enableDamping dampingFactor={0.08} enablePan={false} minDistance={soloFocus ? 1.8 : focus ? 4 : 6} maxDistance={18} minPolarAngle={0.45} maxPolarAngle={1.2} rotateSpeed={0.55} zoomSpeed={0.7} />;
 }
 
 function Player({ identity, local, pathRef, positionRef, groupRef, queuedSeatRef, onMove, onArriveSeat }: {
