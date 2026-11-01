@@ -144,7 +144,23 @@ export function useTeaRoom() {
     }, 1_600);
   }, [updateLocal]);
 
+  const rename = useCallback(async (displayName: string) => {
+    const active = identityRef.current;
+    if (!active || connection !== "online") return { ok: false, message: "연결을 확인하고 다시 시도해 주세요" };
+    const response = await fetch("/api/profile", {
+      method: "PUT", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ sessionId: active.sessionId, token: active.token, displayName }),
+    });
+    if (!response.ok) return { ok: false, message: response.status === 409 ? "같은 다실에서 이미 쓰는 이름이에요" : "2~10자의 한글·영문·숫자로 적어 주세요" };
+    const nextIdentity = { ...active, displayName };
+    identityRef.current = nextIdentity;
+    setIdentity(nextIdentity);
+    sessionStorage.setItem("chagyeong-rabbit", JSON.stringify(nextIdentity));
+    await fetchRoom();
+    return { ok: true, message: "오늘의 이름을 바꾸었어요" };
+  }, [connection, fetchRoom]);
+
   useEffect(() => () => { if (greetTimer.current) window.clearTimeout(greetTimer.current); }, []);
 
-  return { identity, room, connection, message, local, updateLocal, claimSeat, leaveSeat, greet, retry: enter };
+  return { identity, room, connection, message, local, updateLocal, claimSeat, leaveSeat, greet, rename, retry: enter };
 }

@@ -1,8 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import type { TeaRoomWeather } from "@/lib/weather";
 
-export function useAmbientSound() {
+export function useAmbientSound(weather: TeaRoomWeather = "clear") {
   const [enabled, setEnabled] = useState(false);
   const contextRef = useRef<AudioContext | null>(null);
   const melodyTimer = useRef<number | null>(null);
@@ -44,6 +45,20 @@ export function useAmbientSound() {
     breezeGain.gain.value = 0.2;
     breeze.connect(filter).connect(breezeGain).connect(master);
     breeze.start();
+
+    if (weather === "rain") {
+      const rain = context.createBufferSource();
+      const rainFilter = context.createBiquadFilter();
+      const rainGain = context.createGain();
+      rain.buffer = noiseBuffer;
+      rain.loop = true;
+      rainFilter.type = "bandpass";
+      rainFilter.frequency.value = 1150;
+      rainFilter.Q.value = 0.55;
+      rainGain.gain.value = 0.42;
+      rain.connect(rainFilter).connect(rainGain).connect(master);
+      rain.start();
+    }
 
     [73.42, 110].forEach((frequency, index) => {
       const tone = context.createOscillator();
@@ -100,7 +115,7 @@ export function useAmbientSound() {
     contextRef.current = context;
     await context.resume();
     setEnabled(true);
-  }, []);
+  }, [weather]);
 
   const toggle = useCallback(() => {
     if (enabled) stop();
@@ -109,5 +124,48 @@ export function useAmbientSound() {
 
   useEffect(() => stop, [stop]);
 
+  return { enabled, toggle };
+}
+
+export function useWindChime() {
+  const [enabled, setEnabled] = useState(false);
+  const contextRef = useRef<AudioContext | null>(null);
+  const timerRef = useRef<number | null>(null);
+  const stop = useCallback(() => {
+    if (timerRef.current !== null) window.clearTimeout(timerRef.current);
+    timerRef.current = null;
+    const context = contextRef.current;
+    contextRef.current = null;
+    if (context) void context.close();
+    setEnabled(false);
+  }, []);
+  const start = useCallback(async () => {
+    const AudioContextClass = window.AudioContext ?? (window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+    if (!AudioContextClass) return;
+    const context = new AudioContextClass();
+    contextRef.current = context;
+    const ring = () => {
+      if (context.state === "closed") return;
+      const now = context.currentTime;
+      [1046.5, 1567.98].forEach((frequency, index) => {
+        const tone = context.createOscillator();
+        const gain = context.createGain();
+        tone.type = index ? "sine" : "triangle";
+        tone.frequency.value = frequency;
+        gain.gain.setValueAtTime(0.0001, now + index * 0.08);
+        gain.gain.exponentialRampToValueAtTime(index ? 0.025 : 0.045, now + 0.11 + index * 0.08);
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + 2.8 + index * 0.2);
+        tone.connect(gain).connect(context.destination);
+        tone.start(now + index * 0.08);
+        tone.stop(now + 3.1);
+      });
+      timerRef.current = window.setTimeout(ring, 7_000 + Math.random() * 8_000);
+    };
+    await context.resume();
+    timerRef.current = window.setTimeout(ring, 450);
+    setEnabled(true);
+  }, []);
+  const toggle = useCallback(() => enabled ? stop() : void start(), [enabled, start, stop]);
+  useEffect(() => stop, [stop]);
   return { enabled, toggle };
 }

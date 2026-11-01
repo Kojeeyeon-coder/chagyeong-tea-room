@@ -6,22 +6,15 @@ export type TablePosition = { x: number; z: number; kind: "shared" | "solo" };
 export type SeatPosition = { id: string; table: number; kind: "shared" | "solo"; x: number; z: number; rotation: number };
 
 export const TABLE_POSITIONS: readonly TablePosition[] = [
-  { x: -7.5, z: -1.4, kind: "shared" as const },
-  { x: 0, z: -1.4, kind: "shared" as const },
-  { x: 7.5, z: -1.4, kind: "shared" as const },
-  { x: 0, z: 4.4, kind: "shared" as const },
-  { x: -12.1, z: -3.7, kind: "solo" as const },
-  { x: -12.1, z: 2.4, kind: "solo" as const },
-  { x: 12.1, z: -3.7, kind: "solo" as const },
-  { x: 12.1, z: 2.4, kind: "solo" as const },
+  { x: -7.2, z: 3.25, kind: "shared" as const },
+  { x: 0, z: 3.25, kind: "shared" as const },
+  { x: 7.2, z: 3.25, kind: "shared" as const },
+  { x: -3.65, z: -2.15, kind: "shared" as const },
+  { x: 3.65, z: -2.15, kind: "shared" as const },
 ] as const;
 
 export const SEAT_POSITIONS: SeatPosition[] = TABLE_POSITIONS.flatMap<SeatPosition>((tablePosition, table): SeatPosition[] => {
   const { x, z, kind } = tablePosition;
-  if (kind === "solo") {
-    const leftWall = x < 0;
-    return [{ id: `seat-${17 + (table - 4)}`, table, kind, x: x + (leftWall ? 1.25 : -1.25), z, rotation: leftWall ? -Math.PI / 2 : Math.PI / 2 }];
-  }
   return [
     { id: `seat-${table * 4 + 1}`, table, kind, x, z: z - 1.7, rotation: 0 },
     { id: `seat-${table * 4 + 2}`, table, kind, x: x + 1.7, z, rotation: -Math.PI / 2 },
@@ -36,7 +29,7 @@ function toWorld(v: number) { return v * CELL; }
 
 export function isWalkable(point: Vec2) {
   if (point.x < BOUNDS.minX || point.x > BOUNDS.maxX || point.z < BOUNDS.minZ || point.z > BOUNDS.maxZ) return false;
-  const hitsTable = TABLE_POSITIONS.some((table) => Math.abs(point.x - table.x) < (table.kind === "solo" ? 0.6 : 1.45) && Math.abs(point.z - table.z) < (table.kind === "solo" ? 0.9 : 1.45));
+  const hitsTable = TABLE_POSITIONS.some((table) => Math.abs(point.x - table.x) < 1.45 && Math.abs(point.z - table.z) < 1.45);
   const hitsPond = point.z > 8.2 && point.x > 1.7 && point.x < 7.8;
   return !hitsTable && !hitsPond;
 }

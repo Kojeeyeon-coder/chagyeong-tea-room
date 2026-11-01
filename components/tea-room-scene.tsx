@@ -9,6 +9,7 @@ import type { TimeOfDay } from "@/lib/time-of-day";
 import { LIGHTING } from "@/lib/time-of-day";
 import { findPath, SEAT_POSITIONS, TABLE_POSITIONS } from "@/lib/navigation";
 import { TEAS } from "@/lib/catalog";
+import type { TeaRoomWeather } from "@/lib/weather";
 import { Rabbit } from "./rabbit";
 import { TeaService } from "./teaware";
 
@@ -17,6 +18,7 @@ type SceneProps = {
   local: LocalPresence;
   room: RoomSnapshot;
   timeOfDay: TimeOfDay;
+  weather: TeaRoomWeather;
   seatRequest: { seatId: string; nonce: number } | null;
   onMove: (patch: Partial<LocalPresence>) => void;
   onClaimSeat: (seatId: string) => Promise<{ ok: boolean; message: string }>;
@@ -43,38 +45,78 @@ function Lighting({ mode }: { mode: TimeOfDay }) {
   );
 }
 
+function GardenWeather({ weather }: { weather: TeaRoomWeather }) {
+  const points = useRef<THREE.Points>(null);
+  const count = weather === "rain" ? 110 : 64;
+  const positions = useMemo(() => {
+    const values = new Float32Array(count * 3);
+    for (let index = 0; index < count; index += 1) {
+      values[index * 3] = (Math.random() - 0.5) * 26;
+      values[index * 3 + 1] = Math.random() * 6.2;
+      values[index * 3 + 2] = 8.9 + Math.random() * 5.7;
+    }
+    return values;
+  }, [count]);
+  useFrame((_, delta) => {
+    if (!points.current || weather === "clear") return;
+    const attribute = points.current.geometry.getAttribute("position") as THREE.BufferAttribute;
+    const speed = weather === "rain" ? 5.8 : 0.72;
+    for (let index = 0; index < count; index += 1) {
+      let y = attribute.getY(index) - delta * speed;
+      if (y < 0.15) y = 5.8 + Math.random() * 0.6;
+      attribute.setY(index, y);
+      if (weather === "snow") attribute.setX(index, attribute.getX(index) + Math.sin(index * 1.7 + y) * delta * 0.06);
+    }
+    attribute.needsUpdate = true;
+  });
+  if (weather === "clear") return null;
+  return <points ref={points} frustumCulled={false}>
+    <bufferGeometry><bufferAttribute attach="attributes-position" args={[positions, 3]} /></bufferGeometry>
+    <pointsMaterial color={weather === "rain" ? "#b7c9cc" : "#f4f0e7"} size={weather === "rain" ? 0.055 : 0.11} transparent opacity={weather === "rain" ? 0.62 : 0.86} depthWrite={false} sizeAttenuation />
+  </points>;
+}
+
 function CameraRig({ target, focus, moving, seatId }: { target: React.RefObject<THREE.Group | null>; focus: boolean; moving: boolean; seatId: string | null }) {
   const controls = useRef<any>(null);
   const aligned = useRef(false);
   const cameraHeading = useRef(0);
   const activeSeat = seatId ? SEAT_POSITIONS.find((seat) => seat.id === seatId) : null;
-  const soloFocus = activeSeat?.kind === "solo" && focus;
+  const activeTable = activeSeat ? TABLE_POSITIONS[activeSeat.table] : null;
+  useEffect(() => { aligned.current = false; }, [focus, seatId]);
   useFrame(({ camera }, delta) => {
     if (!controls.current || !target.current) return;
     if (camera instanceof THREE.PerspectiveCamera) {
-      camera.fov = THREE.MathUtils.damp(camera.fov, soloFocus ? 58 : focus ? 50 : 52, 3, delta);
+      camera.fov = THREE.MathUtils.damp(camera.fov, focus ? 48 : 52, 3, delta);
       camera.updateProjectionMatrix();
     }
-    const desired = target.current.position.clone();
-    desired.y = focus ? 0.88 : 0.72;
+    const desired = focus && activeSeat && activeTable
+      ? new THREE.Vector3(
+        activeTable.x * 0.35 + activeSeat.x * 0.65,
+        0.82,
+        activeTable.z * 0.35 + activeSeat.z * 0.65,
+      )
+      : target.current.position.clone().setY(0.72);
     controls.current.target.lerp(desired, 1 - Math.exp(-delta * 2.7));
     if (!aligned.current || focus || moving) {
-      const distance = focus ? 6.8 : 9.2;
-      const headingDelta = Math.atan2(Math.sin(target.current.rotation.y - cameraHeading.current), Math.cos(target.current.rotation.y - cameraHeading.current));
-      cameraHeading.current += headingDelta * (1 - Math.exp(-delta * 3.2));
-      const forward = new THREE.Vector3(Math.sin(cameraHeading.current), 0, Math.cos(cameraHeading.current));
-      const cameraTarget = soloFocus
-        ? desired.clone().add(forward.multiplyScalar(2.2)).add(new THREE.Vector3(0, 0, activeSeat!.z < -0.5 ? 1.6 : -1.6))
-        : desired.clone().add(forward.multiplyScalar(focus ? distance : -distance));
-      cameraTarget.x = THREE.MathUtils.clamp(cameraTarget.x, -11.4, 11.4);
-      cameraTarget.z = THREE.MathUtils.clamp(cameraTarget.z, -6.15, 13.25);
-      cameraTarget.y += soloFocus ? 2.15 : focus ? 2.5 : 2.85;
-      camera.position.lerp(cameraTarget, 1 - Math.exp(-delta * (focus ? 1.8 : 1.05)));
+      let cameraTarget: THREE.Vector3;
+      if (focus && activeSeat && activeTable) {
+        const outward = new THREE.Vector3(activeSeat.x - activeTable.x, 0, activeSeat.z - activeTable.z).normalize();
+        const sideways = new THREE.Vector3(-outward.z, 0, outward.x).multiplyScalar(0.45);
+        cameraTarget = new THREE.Vector3(activeTable.x, 3.05, activeTable.z).add(outward.multiplyScalar(-3.35)).add(sideways);
+      } else {
+        const headingDelta = Math.atan2(Math.sin(target.current.rotation.y - cameraHeading.current), Math.cos(target.current.rotation.y - cameraHeading.current));
+        cameraHeading.current += headingDelta * (1 - Math.exp(-delta * 1.8));
+        const forward = new THREE.Vector3(Math.sin(cameraHeading.current), 0, Math.cos(cameraHeading.current));
+        cameraTarget = desired.clone().add(forward.multiplyScalar(-8.8)).add(new THREE.Vector3(0, 3.15, 0));
+      }
+      cameraTarget.x = THREE.MathUtils.clamp(cameraTarget.x, -10.7, 10.7);
+      cameraTarget.z = THREE.MathUtils.clamp(cameraTarget.z, -5.65, 11.9);
+      camera.position.lerp(cameraTarget, 1 - Math.exp(-delta * (focus ? 2.35 : 1.15)));
       aligned.current = true;
     }
     controls.current.update();
   });
-  return <OrbitControls ref={controls} makeDefault enableDamping dampingFactor={0.1} enablePan={false} minDistance={soloFocus ? 4.8 : focus ? 5.2 : 7} maxDistance={24} minPolarAngle={0.82} maxPolarAngle={1.36} rotateSpeed={0.38} zoomSpeed={0.52} />;
+  return <OrbitControls ref={controls} makeDefault enableDamping dampingFactor={0.08} enablePan={false} enableRotate={!focus && !moving} minDistance={focus ? 4.1 : 7} maxDistance={20} minPolarAngle={0.9} maxPolarAngle={1.28} rotateSpeed={0.32} zoomSpeed={0.45} />;
 }
 
 function Player({ identity, local, pathRef, positionRef, groupRef, queuedSeatRef, onMove, onArriveSeat }: {
@@ -183,15 +225,23 @@ function LowTable({ position }: { position: (typeof TABLE_POSITIONS)[number] }) 
 }
 
 function ShojiPanel({ x, display = false }: { x: number; display?: boolean }) {
+  const displaySets = [
+    [[-0.78, -0.92, "jar"], [0.35, -0.88, "cups"], [0.8, 0.06, "vase"], [-0.35, 0.78, "gaiwan"]],
+    [[-0.75, -0.76, "yixing"], [0.18, -0.02, "jar"], [0.76, 0.78, "cups"], [-0.63, 0.86, "vase"]],
+    [[-0.82, -0.9, "cups"], [0.12, -0.8, "gaiwan"], [0.72, 0.12, "jar"], [-0.48, 0.8, "yixing"]],
+  ] as const;
+  const wares = displaySets[Math.abs(Math.round(x / 2.6)) % displaySets.length];
   return (
     <group position={[x, 1.95, -7.17]}>
       <mesh><boxGeometry args={[2.5, 2.75, 0.08]} /><meshStandardMaterial color={display ? "#e4dfd2" : "#edf0e8"} transparent opacity={display ? 0.8 : 0.58} emissive="#d8e4df" emissiveIntensity={0.08} /></mesh>
       {[-1.25, 0, 1.25].map((offset) => <mesh key={`v-${offset}`} position={[offset, 0, 0.06]}><boxGeometry args={[0.08, 2.9, 0.08]} /><meshStandardMaterial color="#8f745b" /></mesh>)}
       {[-1.35, -0.45, 0.45, 1.35].map((offset) => <mesh key={`h-${offset}`} position={[0, offset, 0.06]}><boxGeometry args={[2.58, 0.06, 0.08]} /><meshStandardMaterial color="#9a7d61" /></mesh>)}
-      {display && [[-0.82, -0.93], [0, -0.93], [0.82, -0.93], [-0.82, -0.03], [0, -0.03], [0.82, -0.03], [-0.82, 0.87], [0, 0.87], [0.82, 0.87]].map(([px, py], index) => <group key={`ware-${index}`} position={[px, py, 0.17]}>
-        <mesh castShadow scale={index % 3 === 0 ? [1.15, 0.76, 1] : [0.9, 1, 0.9]}><sphereGeometry args={[0.14, 10, 7]} /><meshStandardMaterial color={["#ece8df", "#aebda8", "#955a42"][index % 3]} roughness={0.82} /></mesh>
-        {index % 2 === 0 && <mesh position={[0, 0.13, 0]}><cylinderGeometry args={[0.055, 0.08, 0.09, 9]} /><meshStandardMaterial color={index % 3 === 2 ? "#854a38" : "#e6e1d6"} /></mesh>}
-        {index % 4 === 1 && <mesh position={[-0.14, 0, 0]} rotation={[Math.PI / 2, 0, 0]}><torusGeometry args={[0.09, 0.022, 6, 12, Math.PI]} /><meshStandardMaterial color="#b9afa0" /></mesh>}
+      {display && wares.map(([px, py, shape], index) => <group key={`ware-${index}`} position={[px, py, 0.17]}>
+        {shape === "jar" && <><mesh castShadow scale={[1.15, 0.82, 1]}><sphereGeometry args={[0.17, 12, 8]} /><meshStandardMaterial color="#eee9df" roughness={0.88} /></mesh><mesh position={[0, 0.16, 0]}><cylinderGeometry args={[0.07, 0.09, 0.1, 10]} /><meshStandardMaterial color="#e8e2d7" /></mesh></>}
+        {shape === "vase" && <><mesh castShadow scale={[0.72, 1.35, 0.72]}><sphereGeometry args={[0.15, 10, 8]} /><meshStandardMaterial color="#9eae99" roughness={0.9} /></mesh><mesh position={[0, 0.22, 0]}><cylinderGeometry args={[0.05, 0.08, 0.2, 9]} /><meshStandardMaterial color="#94a48f" /></mesh></>}
+        {shape === "gaiwan" && <><mesh castShadow rotation={[Math.PI, 0, 0]}><coneGeometry args={[0.18, 0.13, 12]} /><meshStandardMaterial color="#ddd9ce" /></mesh><mesh position={[0, 0.09, 0]}><sphereGeometry args={[0.12, 10, 6, 0, Math.PI * 2, 0, Math.PI / 2]} /><meshStandardMaterial color="#eee9df" /></mesh></>}
+        {shape === "yixing" && <><mesh castShadow scale={[1.2, 0.82, 1]}><sphereGeometry args={[0.16, 12, 8]} /><meshStandardMaterial color="#95583e" roughness={0.8} /></mesh><mesh position={[0.19, 0.02, 0]} rotation={[0, 0, -Math.PI / 2]}><coneGeometry args={[0.055, 0.22, 9]} /><meshStandardMaterial color="#8a5039" /></mesh></>}
+        {shape === "cups" && <>{[-0.1, 0.1].map((cx) => <mesh key={cx} castShadow position={[cx, 0, 0]}><cylinderGeometry args={[0.075, 0.055, 0.1, 10]} /><meshStandardMaterial color="#d8ded5" /></mesh>)}</>}
       </group>)}
     </group>
   );
@@ -230,6 +280,30 @@ function HanjiLantern({ position, floor = false }: { position: [number, number, 
   </group>;
 }
 
+function LowPolyPine({ position, scale = 1 }: { position: [number, number, number]; scale?: number }) {
+  return <group position={position} scale={scale}>
+    <mesh castShadow position={[0, 0.62, 0]} rotation={[0.04, 0, -0.1]}><cylinderGeometry args={[0.08, 0.13, 1.25, 7]} /><meshStandardMaterial color="#604938" roughness={1} /></mesh>
+    <mesh castShadow position={[0.3, 1.05, 0]} rotation={[0, 0, -0.78]}><cylinderGeometry args={[0.055, 0.085, 0.78, 7]} /><meshStandardMaterial color="#69503d" roughness={1} /></mesh>
+    <mesh castShadow position={[-0.28, 1.18, 0.04]} rotation={[0.1, 0, 0.78]}><cylinderGeometry args={[0.05, 0.075, 0.66, 7]} /><meshStandardMaterial color="#604938" roughness={1} /></mesh>
+    {[[-0.62, 1.38, 0.04, 0.72], [0.55, 1.28, 0, 0.86], [0.08, 1.72, -0.02, 0.92]].map(([x, y, z, size], index) => <mesh key={index} castShadow position={[x, y, z]} scale={[size * 1.35, size * 0.42, size]}><dodecahedronGeometry args={[0.62, 0]} /><meshStandardMaterial color={index === 1 ? "#4f6650" : "#587056"} roughness={1} /></mesh>)}
+  </group>;
+}
+
+function WindChime() {
+  const ornament = useRef<THREE.Group>(null);
+  useFrame(({ clock }) => {
+    if (ornament.current) ornament.current.rotation.z = Math.sin(clock.elapsedTime * 0.7) * 0.08 + Math.sin(clock.elapsedTime * 1.9) * 0.025;
+  });
+  return <group position={[10.7, 4.55, 6.65]}>
+    <mesh position={[0, 0.28, 0]}><cylinderGeometry args={[0.025, 0.025, 0.55, 7]} /><meshStandardMaterial color="#554236" /></mesh>
+    <group ref={ornament}>
+      <mesh castShadow><cylinderGeometry args={[0.24, 0.34, 0.42, 12, 1, true]} /><meshStandardMaterial color="#a87a3e" metalness={0.48} roughness={0.35} side={THREE.DoubleSide} /></mesh>
+      <mesh position={[0, -0.3, 0]}><cylinderGeometry args={[0.018, 0.018, 0.48, 6]} /><meshStandardMaterial color="#6b4b2f" /></mesh>
+      <mesh position={[0, -0.58, 0]} rotation={[0, 0, 0.12]} scale={[0.72, 1, 0.12]}><circleGeometry args={[0.18, 5]} /><meshStandardMaterial color="#d8c28f" side={THREE.DoubleSide} /></mesh>
+    </group>
+  </group>;
+}
+
 function OctagonalWindow({ side, z }: { side: -1 | 1; z: number }) {
   return <group position={[side * 13.78, 2.05, z]} rotation={[0, Math.PI / 2, 0]}>
     <mesh><circleGeometry args={[1.11, 8]} /><meshStandardMaterial color="#e9e3d4" transparent opacity={0.16} side={THREE.DoubleSide} depthWrite={false} /></mesh>
@@ -253,7 +327,7 @@ function SideLandscape({ side }: { side: -1 | 1 }) {
 }
 
 function CeilingStructure() {
-  return <group>
+  return <group position={[0, 1.15, 0]}>
     <mesh receiveShadow position={[0, 4.02, 0.35]}><boxGeometry args={[27.8, 0.12, 16.8]} /><meshStandardMaterial color="#4b372c" roughness={0.95} side={THREE.DoubleSide} /></mesh>
     <mesh castShadow receiveShadow position={[-6.85, 4.35, 0.35]} rotation={[0, 0, -0.105]}><boxGeometry args={[13.8, 0.16, 16.8]} /><meshStandardMaterial color="#5b4434" roughness={0.92} /></mesh>
     <mesh castShadow receiveShadow position={[6.85, 4.35, 0.35]} rotation={[0, 0, 0.105]}><boxGeometry args={[13.8, 0.16, 16.8]} /><meshStandardMaterial color="#5b4434" roughness={0.92} /></mesh>
@@ -270,10 +344,10 @@ function RoomDecor() {
   return (
     <group>
       {TABLE_POSITIONS.filter((table) => table.kind === "shared").map((table, index) => <mesh key={`mat-${index}`} receiveShadow position={[table.x, 0.025, table.z]}><boxGeometry args={[4.15, 0.05, 2.85]} /><meshStandardMaterial color={index % 2 ? "#d8d4bc" : "#ded8c5"} roughness={1} /></mesh>)}
-      {[-12, -9, -6, -3, 0, 3, 6, 9, 12].map((x) => <mesh key={`beam-${x}`} castShadow position={[x, 3.55, -6.92]}><boxGeometry args={[0.13, 0.28, 0.34]} /><meshStandardMaterial color="#8d6c50" /></mesh>)}
-      <mesh castShadow position={[0, 3.55, -6.92]}><boxGeometry args={[27.6, 0.18, 0.34]} /><meshStandardMaterial color="#8d6c50" /></mesh>
-      {[-12, -8, -4, 0, 4, 8, 12].map((x) => <mesh key={`rear-post-${x}`} castShadow position={[x, 1.9, -6.86]}><boxGeometry args={[0.28, 3.8, 0.34]} /><meshStandardMaterial color="#5b3f2e" roughness={0.92} /></mesh>)}
-      {([-1, 1] as const).flatMap((side) => [-5.7, -1.8, 2.1, 6].map((z) => <mesh key={`side-post-${side}-${z}`} castShadow position={[side * 13.52, 1.95, z]}><boxGeometry args={[0.32, 3.9, 0.34]} /><meshStandardMaterial color="#5b3f2e" roughness={0.92} /></mesh>))}
+      {[-12, -9, -6, -3, 0, 3, 6, 9, 12].map((x) => <mesh key={`beam-${x}`} castShadow position={[x, 4.65, -6.92]}><boxGeometry args={[0.13, 0.28, 0.34]} /><meshStandardMaterial color="#8d6c50" /></mesh>)}
+      <mesh castShadow position={[0, 4.65, -6.92]}><boxGeometry args={[27.6, 0.18, 0.34]} /><meshStandardMaterial color="#8d6c50" /></mesh>
+      {[-12, -8, -4, 0, 4, 8, 12].map((x) => <mesh key={`rear-post-${x}`} castShadow position={[x, 2.45, -6.86]}><boxGeometry args={[0.28, 4.9, 0.34]} /><meshStandardMaterial color="#5b3f2e" roughness={0.92} /></mesh>)}
+      {([-1, 1] as const).flatMap((side) => [-5.7, -1.8, 2.1, 6].map((z) => <mesh key={`side-post-${side}-${z}`} castShadow position={[side * 13.52, 2.5, z]}><boxGeometry args={[0.32, 5, 0.34]} /><meshStandardMaterial color="#5b3f2e" roughness={0.92} /></mesh>))}
       {[-10.4, -7.8, -5.2, -2.6, 0, 2.6, 5.2, 7.8, 10.4].map((x) => <ShojiPanel key={x} x={x} display={[-10.4, -5.2, 5.2, 10.4].includes(x)} />)}
       <group position={[-7.45, 1.82, -6.1]}>
         <mesh><boxGeometry args={[1.55, 2.45, 0.08]} /><meshStandardMaterial color="#d9d2bf" /></mesh>
@@ -285,10 +359,7 @@ function RoomDecor() {
       <HanjiLantern position={[5, 3.1, -0.5]} />
       <HanjiLantern position={[-12.5, 0, -5.7]} floor />
       <HanjiLantern position={[12, 0, -5.7]} floor />
-      <group position={[-8.1, 0, 5.6]}>
-        <mesh castShadow position={[0, 0.25, 0]}><cylinderGeometry args={[0.34, 0.25, 0.5, 12]} /><meshStandardMaterial color="#b9a58d" /></mesh>
-        {[[-0.18, 0.95, 0.08], [0.16, 1.15, -0.02], [0, 0.85, -0.1]].map((p, index) => <mesh key={index} castShadow position={p as [number, number, number]} rotation={[0, 0, index ? 0.35 : -0.35]}><capsuleGeometry args={[0.08, 0.85, 4, 8]} /><meshStandardMaterial color="#71866b" /></mesh>)}
-      </group>
+      <group position={[-8.1, 0, 5.6]}><mesh castShadow position={[0, 0.25, 0]}><cylinderGeometry args={[0.34, 0.25, 0.5, 12]} /><meshStandardMaterial color="#b9a58d" /></mesh><LowPolyPine position={[0, 0.42, 0]} scale={0.7} /></group>
       <Hearth />
       <group position={[1.7, 0, 9.5]}>
         <mesh castShadow position={[0, 0.55, 0]}><cylinderGeometry args={[0.42, 0.58, 0.85, 8]} /><meshStandardMaterial color="#9b998f" /></mesh>
@@ -314,10 +385,10 @@ function TeaRoom({ mode }: { mode: TimeOfDay }) {
   const candlePositions = [[-8.2, -5.1], [8.2, -5.1], [-8.2, 6.1], [8.2, 6.1]];
   return (
     <group>
-      <mesh receiveShadow position={[0, -0.08, 0]}><boxGeometry args={[28, 0.18, 16.8]} /><meshStandardMaterial color="#bd9672" roughness={0.9} /></mesh>
+      <mesh receiveShadow position={[0, -0.08, -0.15]}><boxGeometry args={[28, 0.18, 14.2]} /><meshStandardMaterial color="#bd9672" roughness={0.9} /></mesh>
       {[-6.8, -5.6, -4.4, -3.2, -2, -0.8, 0.4, 1.6, 2.8, 4, 5.2, 6.4].map((z) => <mesh key={`floor-plank-${z}`} position={[0, 0.016, z]}><boxGeometry args={[27.7, 0.012, 0.025]} /><meshStandardMaterial color="#806047" roughness={1} /></mesh>)}
-      <mesh receiveShadow position={[0, -0.06, 10.8]}><boxGeometry args={[28, 0.14, 8.8]} /><meshStandardMaterial color="#cbd5c1" roughness={1} /></mesh>
-      <mesh position={[0, 2.2, -7.45]}><planeGeometry args={[28, 5]} /><meshBasicMaterial color="#b8d2dd" /></mesh>
+      <mesh receiveShadow position={[0, -0.06, 11.75]}><boxGeometry args={[28, 0.14, 5.5]} /><meshStandardMaterial color="#cbd5c1" roughness={1} /></mesh>
+      <mesh position={[0, 2.75, -7.45]}><planeGeometry args={[28, 6.1]} /><meshBasicMaterial color="#d8d2c2" /></mesh>
       <mesh castShadow receiveShadow position={[0, 0.22, -7.18]}><boxGeometry args={[28, 0.55, 0.22]} /><meshStandardMaterial color="#f2eee4" /></mesh>
       <mesh castShadow receiveShadow position={[0, 3.5, -7.18]}><boxGeometry args={[28, 0.6, 0.22]} /><meshStandardMaterial color="#f2eee4" /></mesh>
       <mesh castShadow receiveShadow position={[-13.85, 0.48, 0.2]}><boxGeometry args={[0.22, 1.12, 16.4]} /><meshStandardMaterial color="#e8e1d4" /></mesh>
@@ -325,21 +396,18 @@ function TeaRoom({ mode }: { mode: TimeOfDay }) {
       <SideLandscape side={-1} />
       <SideLandscape side={1} />
       {([-1, 1] as const).flatMap((side) => [-3.6, 0.2, 4].map((z) => <OctagonalWindow key={`${side}-${z}`} side={side} z={z} />))}
-      <mesh castShadow receiveShadow position={[0, 0.12, 7.65]}><boxGeometry args={[28, 0.3, 1.2]} /><meshStandardMaterial color="#9a7456" roughness={0.86} /></mesh>
-      <mesh castShadow position={[0, 0.24, 8.25]}><boxGeometry args={[28, 0.2, 0.18]} /><meshStandardMaterial color="#76543e" /></mesh>
-      {[-12, -9, -6, -3, 0, 3, 6, 9, 12].map((x) => <mesh key={`veranda-${x}`} position={[x, 0.285, 7.65]}><boxGeometry args={[0.055, 0.02, 1.16]} /><meshStandardMaterial color="#73523e" /></mesh>)}
+      <mesh castShadow receiveShadow position={[0, 0, 8]}><boxGeometry args={[28, 0.16, 2]} /><meshStandardMaterial color="#ad835f" roughness={0.9} /></mesh>
+      <mesh castShadow position={[0, 0.09, 7]}><boxGeometry args={[28, 0.12, 0.13]} /><meshStandardMaterial color="#76543e" /></mesh>
+      {[-12, -9, -6, -3, 0, 3, 6, 9, 12].map((x) => <mesh key={`veranda-${x}`} position={[x, 0.086, 8]}><boxGeometry args={[0.045, 0.015, 1.96]} /><meshStandardMaterial color="#73523e" /></mesh>)}
       <CeilingStructure />
+      <WindChime />
       <RoomDecor />
       {TABLE_POSITIONS.map((position, index) => <LowTable key={index} position={position} />)}
       <mesh receiveShadow position={[4.8, 0.02, 10.4]}><cylinderGeometry args={[3.1, 3.5, 0.12, 24]} /><meshStandardMaterial color="#75918a" roughness={0.4} /></mesh>
       {[[-6.8, 8.3], [-4.5, 10.8], [-1.8, 8.9], [0, 11.7]].map(([x, z], index) => (
         <mesh key={index} castShadow position={[x, 0.12, z]} scale={[1.2, 0.32, 0.85]}><dodecahedronGeometry args={[0.72, 0]} /><meshStandardMaterial color="#aaa99f" roughness={1} /></mesh>
       ))}
-      {[[-7.8, 9.8], [-7, 12], [8.2, 8.1]].map(([x, z], index) => (
-        <group key={index} position={[x, 0, z]}>
-          {[0, 0.22, 0.44].map((offset) => <mesh key={offset} castShadow position={[offset, 1.35 + offset, 0]}><cylinderGeometry args={[0.07, 0.1, 2.7, 8]} /><meshStandardMaterial color="#6f8e6c" /></mesh>)}
-        </group>
-      ))}
+      {[[-7.8, 9.8, 0.9], [-7, 12, 1.15], [8.2, 8.7, 0.95]].map(([x, z, pineScale], index) => <LowPolyPine key={`pine-${index}`} position={[x, 0, z]} scale={pineScale} />)}
       {candlePositions.map(([x, z], index) => (
         <group key={index} position={[x, 0.3, z]}>
           <mesh castShadow><cylinderGeometry args={[0.08, 0.1, 0.5, 10]} /><meshStandardMaterial color="#eee4cf" /></mesh>
@@ -508,6 +576,7 @@ function World(props: SceneProps) {
     <>
       <Lighting mode={props.timeOfDay} />
       <TeaRoom mode={props.timeOfDay} />
+      <GardenWeather weather={props.weather} />
       <mesh position={[0, 0.01, 3.7]} rotation={[-Math.PI / 2, 0, 0]} onPointerUp={handleFloor}>
         <planeGeometry args={[28, 24]} /><meshBasicMaterial transparent opacity={0} depthWrite={false} />
       </mesh>

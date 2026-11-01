@@ -5,6 +5,7 @@ import { choosePoeticName, POETIC_NAME_COUNT } from "../lib/name-generator";
 import { findPath, isWalkable, SEAT_POSITIONS } from "../lib/navigation";
 import { getTimeOfDay } from "../lib/time-of-day";
 import { ROOM_IDS, ROOM_NAMES } from "../lib/chagyeong-types";
+import { getTeaRoomWeather, weatherFromWmoCode } from "../lib/weather";
 
 test("6대 다류와 말차, 네 다구를 제공한다", () => {
   assert.equal(TEAS.length, 7);
@@ -17,8 +18,18 @@ test("20개 좌석 ID와 위치가 모두 고유하다", () => {
   assert.equal(SEAT_POSITIONS.length, 20);
   assert.equal(new Set(SEAT_POSITIONS.map((seat) => seat.id)).size, 20);
   assert.equal(new Set(SEAT_POSITIONS.map((seat) => `${seat.x},${seat.z}`)).size, 20);
-  assert.equal(SEAT_POSITIONS.filter((seat) => seat.kind === "solo").length, 4);
-  assert.equal(SEAT_POSITIONS.filter((seat) => seat.kind === "shared").length, 16);
+  assert.equal(SEAT_POSITIONS.filter((seat) => seat.kind === "solo").length, 0);
+  assert.equal(SEAT_POSITIONS.filter((seat) => seat.kind === "shared").length, 20);
+  assert.equal(new Set(SEAT_POSITIONS.map((seat) => seat.table)).size, 5);
+});
+
+test("날씨 강제 옵션은 시각 검수에 맞는 상태를 돌려준다", () => {
+  assert.equal(getTeaRoomWeather(new Date("2026-01-10"), "snow"), "snow");
+  assert.equal(getTeaRoomWeather(new Date("2026-06-10"), "rain"), "rain");
+  assert.equal(getTeaRoomWeather(new Date("2026-06-10"), "clear"), "clear");
+  assert.equal(weatherFromWmoCode(63), "rain");
+  assert.equal(weatherFromWmoCode(75), "snow");
+  assert.equal(weatherFromWmoCode(1), "clear");
 });
 
 test("다섯 다실이 각 20명씩 총 100명을 수용한다", () => {
