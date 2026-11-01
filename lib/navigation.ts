@@ -2,16 +2,33 @@ import type { Vec2 } from "./chagyeong-types";
 
 const CELL = 0.5;
 const BOUNDS = { minX: -9, maxX: 9, minZ: -6, maxZ: 13 };
-const TABLES = [
-  [-5, -2.6], [0, -2.6], [5, -2.6],
-  [-5, 3], [0, 3], [5, 3],
+export type TablePosition = { x: number; z: number; kind: "shared" | "solo" };
+export type SeatPosition = { id: string; table: number; kind: "shared" | "solo"; x: number; z: number; rotation: number };
+
+export const TABLE_POSITIONS: readonly TablePosition[] = [
+  { x: -5.2, z: -2.6, kind: "shared" as const },
+  { x: 0, z: -2.6, kind: "shared" as const },
+  { x: 5.2, z: -2.6, kind: "shared" as const },
+  { x: 0, z: 3, kind: "shared" as const },
+  { x: -8.5, z: -4.3, kind: "solo" as const },
+  { x: -8.5, z: -0.5, kind: "solo" as const },
+  { x: 8.5, z: -4.3, kind: "solo" as const },
+  { x: 8.5, z: -0.5, kind: "solo" as const },
 ] as const;
 
-export const TABLE_POSITIONS = TABLES.map(([x, z]) => ({ x, z }));
-export const SEAT_POSITIONS = TABLES.flatMap(([x, z], table) => [
-  { id: `seat-${table * 2 + 1}`, table, x, z: z - 1.25, rotation: 0 },
-  { id: `seat-${table * 2 + 2}`, table, x, z: z + 1.25, rotation: Math.PI },
-]);
+export const SEAT_POSITIONS: SeatPosition[] = TABLE_POSITIONS.flatMap<SeatPosition>((tablePosition, table): SeatPosition[] => {
+  const { x, z, kind } = tablePosition;
+  if (kind === "solo") {
+    const leftWall = x < 0;
+    return [{ id: `seat-${17 + (table - 4)}`, table, kind, x: x + (leftWall ? 1.05 : -1.05), z, rotation: leftWall ? -Math.PI / 2 : Math.PI / 2 }];
+  }
+  return [
+    { id: `seat-${table * 4 + 1}`, table, kind, x, z: z - 1.35, rotation: 0 },
+    { id: `seat-${table * 4 + 2}`, table, kind, x: x + 1.75, z, rotation: -Math.PI / 2 },
+    { id: `seat-${table * 4 + 3}`, table, kind, x, z: z + 1.35, rotation: Math.PI },
+    { id: `seat-${table * 4 + 4}`, table, kind, x: x - 1.75, z, rotation: Math.PI / 2 },
+  ];
+});
 
 function key(x: number, z: number) { return `${x},${z}`; }
 function toGrid(v: number) { return Math.round(v / CELL); }
@@ -19,7 +36,7 @@ function toWorld(v: number) { return v * CELL; }
 
 export function isWalkable(point: Vec2) {
   if (point.x < BOUNDS.minX || point.x > BOUNDS.maxX || point.z < BOUNDS.minZ || point.z > BOUNDS.maxZ) return false;
-  const hitsTable = TABLES.some(([x, z]) => Math.abs(point.x - x) < 1.35 && Math.abs(point.z - z) < 0.95);
+  const hitsTable = TABLE_POSITIONS.some((table) => Math.abs(point.x - table.x) < (table.kind === "solo" ? 0.55 : 1.55) && Math.abs(point.z - table.z) < (table.kind === "solo" ? 0.85 : 1.05));
   const hitsPond = point.z > 8.2 && point.x > 1.7 && point.x < 7.8;
   return !hitsTable && !hitsPond;
 }

@@ -14,7 +14,7 @@ export function useTeaRoom() {
   const [connection, setConnection] = useState<ConnectionState>("entering");
   const [message, setMessage] = useState("다실의 문을 여는 중");
   const [local, setLocalState] = useState<LocalPresence>({
-    position: { x: -5.8, z: 11 }, rotation: Math.PI, state: "walking", seatId: null,
+    position: { x: 0, z: 4.8 }, rotation: 0, state: "walking", seatId: null,
     tea: null, teaware: null, ritual: "idle", actionStartedAt: null,
   });
   const identityRef = useRef(identity);

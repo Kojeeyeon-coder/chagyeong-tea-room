@@ -8,7 +8,7 @@ const presenceSchema = z.object({
   position: z.object({ x: z.number().min(-9.2).max(9.2), z: z.number().min(-6.2).max(13.2) }),
   rotation: z.number().finite().min(-Math.PI * 4).max(Math.PI * 4),
   state: z.enum(RABBIT_STATES),
-  seatId: z.string().regex(/^seat-(?:[1-9]|1[0-2])$/).nullable(),
+  seatId: z.string().regex(/^seat-(?:[1-9]|1[0-9]|20)$/).nullable(),
   tea: z.enum(TEA_KINDS).nullable(),
   teaware: z.enum(TEAWARE_KINDS).nullable(),
   ritual: z.enum(RITUAL_STATES),

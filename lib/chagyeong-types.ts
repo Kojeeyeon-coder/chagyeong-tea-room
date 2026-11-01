@@ -1,7 +1,7 @@
 export const RABBIT_VARIANTS = ["snow", "ink", "mist", "chestnut", "cream", "dapple"] as const;
 export type RabbitVariant = (typeof RABBIT_VARIANTS)[number];
 
-export const RABBIT_STATES = ["walking", "sitting", "brewing", "drinking", "greeting"] as const;
+export const RABBIT_STATES = ["walking", "sitting", "brewing", "drinking", "greeting", "requesting", "pouring"] as const;
 export type RabbitState = (typeof RABBIT_STATES)[number];
 
 export const TEA_KINDS = ["green", "white", "yellow", "oolong", "black", "dark", "matcha"] as const;

@@ -4,7 +4,7 @@ import { cleanupStale, getDatabase, json, STALE_AFTER_MS, verifySession } from "
 const authSchema = z.object({ sessionId: z.string().uuid(), token: z.string().min(24).max(128) });
 
 async function readInput(request: Request, seatId: string) {
-  if (!/^seat-(?:[1-9]|1[0-2])$/.test(seatId)) return { response: json({ code: "INVALID_SEAT" }, { status: 400 }) };
+  if (!/^seat-(?:[1-9]|1[0-9]|20)$/.test(seatId)) return { response: json({ code: "INVALID_SEAT" }, { status: 400 }) };
   const parsed = authSchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) return { response: json({ code: "INVALID_SESSION" }, { status: 400 }) };
   if (!await verifySession(parsed.data.sessionId, parsed.data.token)) return { response: json({ code: "INVALID_SESSION" }, { status: 401 }) };

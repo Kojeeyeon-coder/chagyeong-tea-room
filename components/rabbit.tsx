@@ -3,7 +3,7 @@
 import { useFrame } from "@react-three/fiber";
 import { useRef } from "react";
 import * as THREE from "three";
-import type { RabbitState, RabbitVariant, Vec2 } from "@/lib/chagyeong-types";
+import type { RabbitState, RabbitVariant, TeaRitualState, TeawareKind, Vec2 } from "@/lib/chagyeong-types";
 
 const COLORS: Record<RabbitVariant, { fur: string; ear: string }> = {
   snow: { fur: "#f5f1e8", ear: "#d6aaa4" }, ink: { fur: "#343735", ear: "#8f6e6c" },
@@ -17,11 +17,14 @@ type RabbitProps = {
   state: RabbitState;
   position: Vec2;
   rotation: number;
+  ritual?: TeaRitualState;
+  teaware?: TeawareKind | null;
+  teaColor?: string;
   local?: boolean;
   groupRef?: React.RefObject<THREE.Group | null>;
 };
 
-export function Rabbit({ variant, name, state, position, rotation, local = false, groupRef }: RabbitProps) {
+export function Rabbit({ variant, name, state, position, rotation, ritual = "idle", teaware, teaColor = "#9b744b", local = false, groupRef }: RabbitProps) {
   const internal = useRef<THREE.Group>(null);
   const body = useRef<THREE.Group>(null);
   const leftEar = useRef<THREE.Mesh>(null);
@@ -41,24 +44,39 @@ export function Rabbit({ variant, name, state, position, rotation, local = false
     const t = clock.elapsedTime;
     const walking = state === "walking";
     const greeting = state === "greeting";
+    const requesting = state === "requesting";
+    const pouring = state === "pouring";
     const brewing = state === "brewing";
     const drinking = isDrinking;
+    const preparing = brewing && ritual === "preparing";
+    const whisking = brewing && ritual === "brewing" && teaware === "matchaSet";
+    const steeping = brewing && ritual === "brewing" && teaware !== "matchaSet";
+    const serving = brewing && ritual === "serving";
     const resting = state === "sitting" || brewing || drinking;
     body.current.position.y = walking ? Math.abs(Math.sin(t * 7)) * 0.09 : resting ? -0.12 : 0;
-    body.current.rotation.x = greeting ? Math.sin(t * 5) * 0.22 + 0.18 : 0;
-    body.current.rotation.z = brewing ? Math.sin(t * 3.2) * 0.055 : 0;
+    body.current.rotation.x = greeting ? Math.sin(t * 5) * 0.22 + 0.18 : requesting ? 0.1 + Math.sin(t * 3) * 0.04 : pouring ? 0.16 : 0;
+    body.current.rotation.z = whisking ? Math.sin(t * 7) * 0.07 : pouring ? -0.11 : serving ? -0.05 : 0;
     if (leftEar.current && rightEar.current) {
       leftEar.current.rotation.z = -0.1 + Math.sin(t * 2.2) * 0.035;
       rightEar.current.rotation.z = 0.1 - Math.sin(t * 2.2) * 0.035;
     }
     if (leftPaw.current && rightPaw.current) {
-      const pawLift = drinking ? -1.2 : brewing ? -0.78 : greeting ? -0.55 : walking ? Math.sin(t * 7) * 0.35 : 0;
-      leftPaw.current.rotation.x = pawLift + (brewing ? Math.sin(t * 4) * 0.12 : 0);
-      rightPaw.current.rotation.x = pawLift - (brewing ? Math.sin(t * 4) * 0.12 : 0);
+      const pawLift = drinking ? -1.2 : pouring ? -1.08 : requesting ? -0.72 : serving ? -1.02 : steeping ? -0.82 : preparing ? -0.55 : whisking ? -0.9 : greeting ? -0.55 : walking ? Math.sin(t * 7) * 0.35 : 0;
+      const ritualMotion = whisking ? Math.sin(t * 12) * 0.32 : steeping ? Math.sin(t * 2.5) * 0.08 : 0;
+      leftPaw.current.rotation.x = pawLift + ritualMotion;
+      rightPaw.current.rotation.x = pawLift - ritualMotion * 0.7;
+      leftPaw.current.rotation.z = 0.18 + (serving ? 0.18 : 0);
+      rightPaw.current.rotation.z = -0.18 - (serving ? 0.1 : 0);
+      leftPaw.current.position.x = THREE.MathUtils.damp(leftPaw.current.position.x, drinking ? -0.23 : -0.34, 9, delta);
+      rightPaw.current.position.x = THREE.MathUtils.damp(rightPaw.current.position.x, drinking ? 0.23 : 0.34, 9, delta);
+      leftPaw.current.position.y = THREE.MathUtils.damp(leftPaw.current.position.y, drinking ? 0.94 : 0.72, 9, delta);
+      rightPaw.current.position.y = THREE.MathUtils.damp(rightPaw.current.position.y, drinking ? 0.94 : 0.72, 9, delta);
     }
     if (cup.current) {
-      cup.current.position.y = 1.02 + Math.sin(t * 2.4) * 0.025;
-      cup.current.rotation.x = drinking ? -0.2 + Math.sin(t * 2.4) * 0.05 : 0;
+      cup.current.position.x = 0.21;
+      cup.current.position.y = 1.54 + Math.sin(t * 2.4) * 0.018;
+      cup.current.position.z = 0.92;
+      cup.current.rotation.x = drinking ? -0.38 + Math.sin(t * 2.4) * 0.035 : 0;
     }
   });
 
@@ -87,9 +105,15 @@ export function Rabbit({ variant, name, state, position, rotation, local = false
           <capsuleGeometry args={[0.1, 0.35, 4, 8]} /><meshStandardMaterial color={colors.fur} />
         </mesh>
         <mesh castShadow position={[0, 0.72, -0.54]}><sphereGeometry args={[0.19, 10, 8]} /><meshStandardMaterial color={colors.fur} /></mesh>
-        <group ref={cup} visible={isDrinking} position={[0, 1.02, 0.55]}>
-          <mesh castShadow><cylinderGeometry args={[0.13, 0.1, 0.18, 14]} /><meshStandardMaterial color="#f6f1e8" roughness={0.8} /></mesh>
-          <mesh position={[0, 0.095, 0]}><cylinderGeometry args={[0.09, 0.09, 0.015, 14]} /><meshStandardMaterial color="#a38352" /></mesh>
+        <group ref={cup} visible={isDrinking} position={[0, 1.31, 0.92]} scale={1.08}>
+          {teaware === "matchaSet" ? <>
+            <mesh castShadow><cylinderGeometry args={[0.28, 0.2, 0.22, 18]} /><meshStandardMaterial color="#eee8dc" roughness={0.88} /></mesh>
+            <mesh position={[0, 0.12, 0]}><cylinderGeometry args={[0.22, 0.22, 0.018, 18]} /><meshStandardMaterial color="#91aa68" /></mesh>
+            <mesh position={[0, 0.125, 0]} rotation={[Math.PI / 2, 0, 0]}><torusGeometry args={[0.245, 0.018, 6, 18]} /><meshStandardMaterial color="#788762" roughness={0.8} /></mesh>
+          </> : <>
+            <mesh castShadow><cylinderGeometry args={[0.13, 0.1, 0.18, 14]} /><meshStandardMaterial color="#f6f1e8" roughness={0.8} /></mesh>
+            <mesh position={[0, 0.095, 0]}><cylinderGeometry args={[0.09, 0.09, 0.015, 14]} /><meshStandardMaterial color={teaColor} /></mesh>
+          </>}
         </group>
       </group>
     </group>

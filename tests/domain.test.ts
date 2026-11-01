@@ -12,10 +12,12 @@ test("6대 다류와 말차, 네 다구를 제공한다", () => {
   assert.ok(TEAS.every((tea) => TEAWARE.some((ware) => ware.id === tea.recommended)));
 });
 
-test("12개 좌석 ID와 위치가 모두 고유하다", () => {
-  assert.equal(SEAT_POSITIONS.length, 12);
-  assert.equal(new Set(SEAT_POSITIONS.map((seat) => seat.id)).size, 12);
-  assert.equal(new Set(SEAT_POSITIONS.map((seat) => `${seat.x},${seat.z}`)).size, 12);
+test("20개 좌석 ID와 위치가 모두 고유하다", () => {
+  assert.equal(SEAT_POSITIONS.length, 20);
+  assert.equal(new Set(SEAT_POSITIONS.map((seat) => seat.id)).size, 20);
+  assert.equal(new Set(SEAT_POSITIONS.map((seat) => `${seat.x},${seat.z}`)).size, 20);
+  assert.equal(SEAT_POSITIONS.filter((seat) => seat.kind === "solo").length, 4);
+  assert.equal(SEAT_POSITIONS.filter((seat) => seat.kind === "shared").length, 16);
 });
 
 test("경로 탐색은 찻상을 피해 목표까지 도달한다", () => {
