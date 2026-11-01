@@ -1,6 +1,6 @@
 "use client";
 
-import { OrbitControls, Sparkles } from "@react-three/drei";
+import { Html, OrbitControls, Sparkles } from "@react-three/drei";
 import { Canvas, ThreeEvent, useFrame, useThree } from "@react-three/fiber";
 import { useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
@@ -135,6 +135,16 @@ function Player({ identity, local, pathRef, positionRef, groupRef, queuedSeatRef
 
   const teaColor = TEAS.find((tea) => tea.id === local.tea)?.color;
   return <Rabbit groupRef={groupRef} local variant={identity.variant} name={identity.displayName} state={local.state} ritual={local.ritual} teaware={local.teaware} teaColor={teaColor} position={renderPosition} rotation={rotation} />;
+}
+
+function LocalNameTag({ target, name }: { target: React.RefObject<THREE.Group | null>; name: string }) {
+  const tag = useRef<THREE.Group>(null);
+  useFrame(() => {
+    if (!tag.current || !target.current) return;
+    tag.current.position.copy(target.current.position);
+    tag.current.position.y = 2.88;
+  });
+  return <group ref={tag}><Html center sprite distanceFactor={10} zIndexRange={[28, 16]} occlude={false}><div className="rabbit-name is-local"><span>잎</span>{name}</div></Html></group>;
 }
 
 function LowTable({ position }: { position: (typeof TABLE_POSITIONS)[number] }) {
@@ -372,6 +382,7 @@ function World(props: SceneProps) {
       </mesh>
       {SEAT_POSITIONS.map((seat) => <Seat key={seat.id} seat={seat} occupied={Boolean(props.room.occupiedSeats[seat.id])} onClick={() => requestSeat(seat.id)} />)}
       <Player identity={props.identity} local={props.local} pathRef={pathRef} positionRef={localPositionRef} groupRef={playerRef} queuedSeatRef={queuedSeatRef} onMove={props.onMove} onArriveSeat={(seatId) => void props.onClaimSeat(seatId).then((result) => props.onNotice(result.message))} />
+      <LocalNameTag target={playerRef} name={props.identity.displayName} />
       {props.room.people.filter((person) => person.sessionId !== props.identity.sessionId).map((person) => (
         <Rabbit key={person.sessionId} variant={person.variant} name={person.displayName} state={person.state} ritual={person.ritual} teaware={person.teaware} teaColor={TEAS.find((tea) => tea.id === person.tea)?.color} position={person.position} rotation={person.rotation} />
       ))}

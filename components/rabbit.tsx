@@ -118,9 +118,9 @@ export function Rabbit({ variant, name, state, position, rotation, ritual = "idl
           </>}
         </group>
       </group>
-      <Html center sprite position={[0, local ? 2.88 : 2.62, 0]} distanceFactor={10} zIndexRange={[28, 16]} occlude={false}>
-        <div className={`rabbit-name ${local ? "is-local" : ""}`}><span>{local ? "잎" : ""}</span>{name}</div>
-      </Html>
+      {!local && <Html center sprite position={[0, 2.62, 0]} distanceFactor={10} zIndexRange={[28, 16]} occlude={false}>
+        <div className="rabbit-name">{name}</div>
+      </Html>}
     </group>
   );
 }
