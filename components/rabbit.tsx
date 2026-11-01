@@ -1,6 +1,7 @@
 "use client";
 
 import { useFrame } from "@react-three/fiber";
+import { Html } from "@react-three/drei";
 import { useRef } from "react";
 import * as THREE from "three";
 import type { RabbitState, RabbitVariant, TeaRitualState, TeawareKind, Vec2 } from "@/lib/chagyeong-types";
@@ -33,6 +34,7 @@ export function Rabbit({ variant, name, state, position, rotation, ritual = "idl
   const rightPaw = useRef<THREE.Mesh>(null);
   const cup = useRef<THREE.Group>(null);
   const colors = COLORS[variant];
+  const eyeColor = variant === "ink" ? "#eee8d6" : "#302b29";
   const isDrinking = state === "drinking";
 
   useFrame(({ clock }, delta) => {
@@ -74,9 +76,9 @@ export function Rabbit({ variant, name, state, position, rotation, ritual = "idl
     }
     if (cup.current) {
       cup.current.position.x = 0.21;
-      cup.current.position.y = 1.54 + Math.sin(t * 2.4) * 0.018;
-      cup.current.position.z = 0.92;
-      cup.current.rotation.x = drinking ? -0.38 + Math.sin(t * 2.4) * 0.035 : 0;
+      cup.current.position.y = 1.4 + Math.sin(t * 2.4) * 0.018;
+      cup.current.position.z = 0.55;
+      cup.current.rotation.x = drinking ? -0.58 + Math.sin(t * 2.4) * 0.035 : 0;
     }
   });
 
@@ -95,8 +97,8 @@ export function Rabbit({ variant, name, state, position, rotation, ritual = "idl
         <mesh ref={rightEar} castShadow position={[0.2, 1.93, -0.02]} scale={[0.34, 1, 0.28]} rotation={[0.05, 0, 0.1]}>
           <capsuleGeometry args={[0.18, 0.55, 6, 10]} /><meshStandardMaterial color={colors.fur} roughness={0.92} />
         </mesh>
-        <mesh position={[-0.16, 1.42, 0.43]}><sphereGeometry args={[0.035, 8, 8]} /><meshBasicMaterial color="#302b29" /></mesh>
-        <mesh position={[0.16, 1.42, 0.43]}><sphereGeometry args={[0.035, 8, 8]} /><meshBasicMaterial color="#302b29" /></mesh>
+        <mesh position={[-0.16, 1.42, 0.43]}><sphereGeometry args={[0.04, 8, 8]} /><meshBasicMaterial color={eyeColor} /></mesh>
+        <mesh position={[0.16, 1.42, 0.43]}><sphereGeometry args={[0.04, 8, 8]} /><meshBasicMaterial color={eyeColor} /></mesh>
         <mesh position={[0, 1.28, 0.46]} scale={[1, 0.7, 0.7]}><sphereGeometry args={[0.05, 8, 8]} /><meshStandardMaterial color="#a77875" /></mesh>
         <mesh ref={leftPaw} castShadow position={[-0.34, 0.72, 0.27]} rotation={[0, 0, 0.18]}>
           <capsuleGeometry args={[0.1, 0.35, 4, 8]} /><meshStandardMaterial color={colors.fur} />
@@ -116,6 +118,9 @@ export function Rabbit({ variant, name, state, position, rotation, ritual = "idl
           </>}
         </group>
       </group>
+      <Html center sprite position={[0, local ? 2.88 : 2.62, 0]} distanceFactor={10} zIndexRange={[28, 16]} occlude={false}>
+        <div className={`rabbit-name ${local ? "is-local" : ""}`}><span>{local ? "잎" : ""}</span>{name}</div>
+      </Html>
     </group>
   );
 }

@@ -1,9 +1,10 @@
 import { env } from "cloudflare:workers";
-import type { PresenceSnapshot, RabbitVariant, RoomSnapshot } from "@/lib/chagyeong-types";
-import { RABBIT_VARIANTS } from "@/lib/chagyeong-types";
+import type { PresenceSnapshot, RabbitVariant, RoomId, RoomSnapshot } from "@/lib/chagyeong-types";
+import { RABBIT_VARIANTS, ROOM_IDS } from "@/lib/chagyeong-types";
+import { SEAT_POSITIONS } from "@/lib/navigation";
 import { choosePoeticName } from "@/lib/name-generator";
 
-export const ROOM_ID = "main" as const;
+export const ROOM_IDS_LIST = ROOM_IDS;
 export const ROOM_CAPACITY = 20;
 export const STALE_AFTER_MS = 10_000;
 
@@ -42,7 +43,7 @@ export async function cleanupStale(now = Date.now()) {
   const db = getDatabase();
   const cutoff = now - STALE_AFTER_MS;
   await db.batch([
-    db.prepare("DELETE FROM room_seats WHERE updated_at < ?").bind(cutoff),
+    db.prepare("DELETE FROM room_seats WHERE session_id NOT IN (SELECT id FROM rabbit_sessions WHERE updated_at >= ?)").bind(cutoff),
     db.prepare("DELETE FROM rabbit_sessions WHERE updated_at < ?").bind(cutoff),
   ]);
 }
@@ -57,7 +58,7 @@ type SessionRow = {
   id: string;
   display_name: string;
   variant: RabbitVariant;
-  room_id: "main";
+  room_id: RoomId;
   x: number;
   z: number;
   rotation: number;
@@ -70,16 +71,30 @@ type SessionRow = {
   updated_at: number;
 };
 
-export async function getRoomSnapshot(): Promise<RoomSnapshot> {
+export async function getSessionRoom(sessionId: string): Promise<RoomId | null> {
+  const row = await getDatabase().prepare("SELECT room_id FROM rabbit_sessions WHERE id = ?").bind(sessionId).first<{ room_id: RoomId }>();
+  return row?.room_id ?? null;
+}
+
+export function seatKey(roomId: RoomId, seatId: string) { return `${roomId}:${seatId}`; }
+
+export async function getRoomSnapshot(roomId: RoomId): Promise<RoomSnapshot> {
   const db = getDatabase();
   const now = Date.now();
   await cleanupStale(now);
   const peopleResult = await db.prepare(
     "SELECT id, display_name, variant, room_id, x, z, rotation, state, seat_id, tea, teaware, ritual, action_started_at, updated_at FROM rabbit_sessions WHERE room_id = ? AND updated_at >= ? ORDER BY updated_at DESC",
-  ).bind(ROOM_ID, now - STALE_AFTER_MS).all<SessionRow>();
+  ).bind(roomId, now - STALE_AFTER_MS).all<SessionRow>();
   const seatsResult = await db.prepare(
-    "SELECT seat_id, session_id FROM room_seats WHERE room_id = ? AND updated_at >= ?",
-  ).bind(ROOM_ID, now - STALE_AFTER_MS).all<{ seat_id: string; session_id: string }>();
+    "SELECT seat_id, session_id, updated_at FROM room_seats WHERE room_id = ? ORDER BY updated_at ASC",
+  ).bind(roomId).all<{ seat_id: string; session_id: string; updated_at: number }>();
+
+  const localSeats = seatsResult.results.map((seat) => ({ ...seat, seat_id: seat.seat_id.replace(`${roomId}:`, "") }));
+  const tableHosts: Record<string, string> = {};
+  for (const seat of localSeats) {
+    const table = SEAT_POSITIONS.find((candidate) => candidate.id === seat.seat_id)?.table;
+    if (table !== undefined && tableHosts[String(table)] === undefined) tableHosts[String(table)] = seat.session_id;
+  }
 
   return {
     people: peopleResult.results.map((row) => ({
@@ -97,7 +112,8 @@ export async function getRoomSnapshot(): Promise<RoomSnapshot> {
       actionStartedAt: row.action_started_at,
       updatedAt: row.updated_at,
     })),
-    occupiedSeats: Object.fromEntries(seatsResult.results.map((seat) => [seat.seat_id, seat.session_id])),
+    occupiedSeats: Object.fromEntries(localSeats.map((seat) => [seat.seat_id, seat.session_id])),
+    tableHosts,
     serverTime: now,
   };
 }

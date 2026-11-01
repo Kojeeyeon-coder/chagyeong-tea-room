@@ -18,6 +18,9 @@ button:focus-visible { outline: 2px solid #617760; outline-offset: 3px; }
 
 .chagyeong-shell, .scene { position: fixed; inset: 0; }
 .scene canvas { touch-action: none; }
+.rabbit-name { display: flex; align-items: center; gap: 5px; border: 1px solid rgba(255,255,255,.58); border-radius: 999px; padding: 5px 9px; background: rgba(249,248,242,.8); box-shadow: 0 6px 18px rgba(49,57,51,.12); color: #46534a; font-size: 10px; font-weight: 700; white-space: nowrap; backdrop-filter: blur(8px); pointer-events: none; }
+.rabbit-name span { color: #6f8a67; font-size: 8px; transform: rotate(45deg); }
+.rabbit-name.is-local { border-color: rgba(109,138,101,.46); background: rgba(230,237,220,.9); }
 .topbar { position: fixed; top: 20px; left: 22px; right: 22px; z-index: 30; display: flex; align-items: center; justify-content: space-between; pointer-events: none; }
 .brand-lockup, .room-pills, .sound-toggle, .identity-card, .visitor-card, .notice, .action-dock, .tea-panel, .seat-choice, .shared-actions { border: 1px solid rgba(255,255,255,.56); background: rgba(250,250,247,.78); box-shadow: 0 16px 45px rgba(42,48,43,.10); backdrop-filter: blur(18px); }
 .brand-lockup { display: flex; gap: 10px; align-items: center; border-radius: 999px; padding: 8px 14px 8px 9px; }
@@ -34,7 +37,7 @@ button:focus-visible { outline: 2px solid #617760; outline-offset: 3px; }
 .connection-dot::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: #71a276; box-shadow: 0 0 0 4px rgba(113,162,118,.12); }
 .connection-reconnecting::before { background: #c69356; }
 
-.identity-card { position: fixed; left: 22px; top: 88px; z-index: 30; display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-radius: 15px; pointer-events: none; }
+.identity-card { position: fixed; left: 26px; top: 102px; z-index: 30; display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-radius: 15px; pointer-events: none; }
 .identity-card small, .ritual-status small { display: block; font-size: 10px; color: #818a82; }
 .identity-card strong, .ritual-status strong { display: block; margin-top: 2px; font-size: 13px; }
 .visitor-card { position: fixed; right: 22px; top: 88px; z-index: 29; display: grid; gap: 6px; min-width: 155px; border-radius: 15px; padding: 11px 13px; pointer-events: none; }
@@ -107,7 +110,7 @@ button:focus-visible { outline: 2px solid #617760; outline-offset: 3px; }
   .room-actions { gap: 5px; }
   .sound-toggle { min-width: 42px; padding: 8px; justify-content: center; }
   .sound-toggle span { display: none; }
-  .identity-card { top: 68px; left: 12px; }
+  .identity-card { top: 76px; left: 14px; }
   .visitor-card { display: none; }
   .action-dock { bottom: 10px; width: calc(100vw - 20px); grid-template-columns: repeat(4, minmax(0, 1fr)); }
   .action-dock button { min-height: 58px; }

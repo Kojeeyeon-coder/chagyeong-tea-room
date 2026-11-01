@@ -4,6 +4,7 @@ import { TEAS, TEAWARE } from "../lib/catalog";
 import { choosePoeticName, POETIC_NAME_COUNT } from "../lib/name-generator";
 import { findPath, isWalkable, SEAT_POSITIONS } from "../lib/navigation";
 import { getTimeOfDay } from "../lib/time-of-day";
+import { ROOM_IDS, ROOM_NAMES } from "../lib/chagyeong-types";
 
 test("6대 다류와 말차, 네 다구를 제공한다", () => {
   assert.equal(TEAS.length, 7);
@@ -18,6 +19,12 @@ test("20개 좌석 ID와 위치가 모두 고유하다", () => {
   assert.equal(new Set(SEAT_POSITIONS.map((seat) => `${seat.x},${seat.z}`)).size, 20);
   assert.equal(SEAT_POSITIONS.filter((seat) => seat.kind === "solo").length, 4);
   assert.equal(SEAT_POSITIONS.filter((seat) => seat.kind === "shared").length, 16);
+});
+
+test("다섯 다실이 각 20명씩 총 100명을 수용한다", () => {
+  assert.equal(ROOM_IDS.length, 5);
+  assert.equal(new Set(ROOM_IDS.map((room) => ROOM_NAMES[room])).size, 5);
+  assert.equal(ROOM_IDS.length * SEAT_POSITIONS.length, 100);
 });
 
 test("경로 탐색은 찻상을 피해 목표까지 도달한다", () => {

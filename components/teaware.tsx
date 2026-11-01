@@ -31,7 +31,7 @@ export function TeaService({ kind, ritual, color = "#9b744b" }: { kind: TeawareK
     const firstPour = serving && kind !== "matchaSet" && servingElapsed < 1.45;
     const secondPour = serving && kind !== "matchaSet" && servingElapsed >= 1.45 && servingElapsed < 2.9;
     vessel.current.position.y = THREE.MathUtils.damp(vessel.current.position.y, firstPour ? 0.42 : brewing ? 0.24 : preparing ? 0.16 : 0.1, 7, delta);
-    vessel.current.position.x = THREE.MathUtils.damp(vessel.current.position.x, kind === "matchaSet" ? 0 : firstPour ? -0.08 : -0.34, 7, delta);
+    vessel.current.position.x = THREE.MathUtils.damp(vessel.current.position.x, kind === "matchaSet" ? 0 : firstPour ? -0.12 : -0.42, 7, delta);
     vessel.current.rotation.z = THREE.MathUtils.damp(vessel.current.rotation.z, firstPour ? -0.66 : 0, 8, delta);
     root.current.position.y = 0.08 + ((preparing || brewing) ? Math.sin(t * 2.2) * 0.018 : 0);
     if (whisk.current) {
@@ -71,7 +71,7 @@ export function TeaService({ kind, ritual, color = "#9b744b" }: { kind: TeawareK
       stream.current.scale.y = firstPour ? 0.82 + Math.sin(t * 8) * 0.08 : 0.01;
     }
     if (fairness.current) {
-      fairness.current.position.x = THREE.MathUtils.damp(fairness.current.position.x, secondPour ? 0.38 : 0.18, 7, delta);
+      fairness.current.position.x = THREE.MathUtils.damp(fairness.current.position.x, secondPour ? 0.42 : 0.22, 7, delta);
       fairness.current.position.y = THREE.MathUtils.damp(fairness.current.position.y, secondPour ? 0.32 : 0, 7, delta);
       fairness.current.rotation.z = THREE.MathUtils.damp(fairness.current.rotation.z, secondPour ? -0.7 : 0, 8, delta);
     }
@@ -107,7 +107,7 @@ export function TeaService({ kind, ritual, color = "#9b744b" }: { kind: TeawareK
   const isGaiwan = kind === "gaiwan";
   const isYixing = kind === "yixing";
   return (
-    <group ref={root} position={[0, 0.08, 0]} scale={0.74}>
+    <group ref={root} position={[0, 0.08, 0]} scale={0.62}>
       <group ref={vessel}>
         {isGaiwan ? <>
           <mesh castShadow><cylinderGeometry args={[0.38, 0.26, 0.3, 18]} /><meshStandardMaterial color={clay} roughness={0.82} /></mesh>
@@ -117,34 +117,37 @@ export function TeaService({ kind, ritual, color = "#9b744b" }: { kind: TeawareK
           <mesh castShadow scale={[1.12, 0.78, 1]}><sphereGeometry args={[0.39, 18, 14]} /><meshStandardMaterial color="#96543f" roughness={0.76} /></mesh>
           <mesh castShadow position={[0, 0.28, 0]} scale={[1.1, 0.5, 1]}><sphereGeometry args={[0.24, 14, 10]} /><meshStandardMaterial color="#96543f" roughness={0.72} /></mesh>
           <mesh castShadow position={[0, 0.39, 0]}><sphereGeometry args={[0.065, 10, 8]} /><meshStandardMaterial color="#7e4133" /></mesh>
-          <mesh castShadow position={[0.42, 0.02, 0]} rotation={[0, 0, -Math.PI / 2]}><coneGeometry args={[0.105, 0.46, 12]} /><meshStandardMaterial color="#96543f" roughness={0.74} /></mesh>
+          <mesh castShadow position={[0.42, 0.02, 0]} rotation={[0, 0, -Math.PI / 2]}><cylinderGeometry args={[0.07, 0.11, 0.44, 12]} /><meshStandardMaterial color="#96543f" roughness={0.74} /></mesh>
+          <mesh castShadow position={[0.65, 0.02, 0]} scale={[1.15, 0.72, 1.15]}><sphereGeometry args={[0.08, 10, 8]} /><meshStandardMaterial color="#96543f" roughness={0.74} /></mesh>
           <mesh position={[-0.38, 0.04, 0]} rotation={[0, 0, -0.15]}><torusGeometry args={[0.23, 0.052, 9, 18, Math.PI]} /><meshStandardMaterial color="#8d4938" roughness={0.78} /></mesh>
         </> : <>
           <mesh castShadow scale={[1, 0.9, 1]}><sphereGeometry args={[0.36, 16, 12]} /><meshStandardMaterial color={clay} roughness={0.82} /></mesh>
           <mesh castShadow position={[0, 0.3, 0]}><cylinderGeometry args={[0.18, 0.22, 0.12, 14]} /><meshStandardMaterial color={clay} /></mesh>
-          <mesh castShadow position={[0.44, 0.04, 0]} rotation={[0, 0, -Math.PI / 2]}><coneGeometry args={[0.13, 0.52, 10]} /><meshStandardMaterial color={clay} /></mesh>
+          <mesh castShadow position={[0.44, 0.04, 0]} rotation={[0, 0, -Math.PI / 2]}><cylinderGeometry args={[0.075, 0.12, 0.5, 12]} /><meshStandardMaterial color={clay} /></mesh>
+          <mesh castShadow position={[0.7, 0.04, 0]} scale={[1.1, 0.72, 1.1]}><sphereGeometry args={[0.085, 10, 8]} /><meshStandardMaterial color={clay} /></mesh>
           <mesh position={[-0.39, 0.05, 0]}><torusGeometry args={[0.22, 0.045, 8, 14, Math.PI]} /><meshStandardMaterial color={clay} /></mesh>
         </>}
       </group>
-      <group ref={fairness} position={[0.18, 0, 0.24]}>
-        <mesh position={[0, -0.015, 0]} scale={[0.72, 0.84, 0.72]}><cylinderGeometry args={[0.17, 0.11, 0.25, 14]} /><meshStandardMaterial color={liquidColor} transparent opacity={0.86} roughness={0.35} /></mesh>
-        <mesh castShadow scale={[0.82, 1, 0.82]}><cylinderGeometry args={[0.19, 0.13, 0.3, 14]} /><meshStandardMaterial color="#eaf2ef" transparent opacity={0.28} roughness={0.12} metalness={0.08} depthWrite={false} /></mesh>
+      <group ref={fairness} position={[0.22, 0, 0.08]}>
+        <mesh position={[0, -0.015, 0]} scale={[0.72, 0.84, 0.72]}><cylinderGeometry args={[0.17, 0.11, 0.25, 14]} /><meshStandardMaterial color={liquidColor} transparent opacity={0.92} roughness={0.35} /></mesh>
+        <mesh castShadow scale={[0.82, 1, 0.82]}><cylinderGeometry args={[0.19, 0.13, 0.3, 14]} /><meshStandardMaterial color="#dce9e6" transparent opacity={0.46} roughness={0.12} metalness={0.08} depthWrite={false} /></mesh>
         <mesh castShadow position={[0.18, 0.05, 0]} rotation={[0, 0, -Math.PI / 2]}><coneGeometry args={[0.075, 0.26, 9]} /><meshStandardMaterial color="#eaf2ef" transparent opacity={0.32} roughness={0.12} metalness={0.08} depthWrite={false} /></mesh>
         <mesh position={[-0.17, 0.03, 0]}><torusGeometry args={[0.13, 0.025, 7, 12, Math.PI]} /><meshStandardMaterial color="#dfeae6" transparent opacity={0.48} roughness={0.12} metalness={0.08} /></mesh>
         <mesh position={[0, 0.16, 0]}><cylinderGeometry args={[0.13, 0.13, 0.014, 14]} /><meshStandardMaterial color={liquidColor} transparent opacity={0.82} /></mesh>
+        <mesh position={[0, 0.165, 0]} rotation={[Math.PI / 2, 0, 0]}><torusGeometry args={[0.155, 0.014, 7, 14]} /><meshStandardMaterial color="#c7d8d3" transparent opacity={0.9} roughness={0.18} /></mesh>
       </group>
-      <group position={[0.58, -0.09, 0.18]}>
+      <group position={[0.72, -0.09, 0.08]}>
         <mesh castShadow><cylinderGeometry args={[0.17, 0.12, 0.2, 14]} /><meshStandardMaterial color="#eee8dd" /></mesh>
         <mesh position={[0, 0.11, 0]}><cylinderGeometry args={[0.115, 0.115, 0.018, 14]} /><meshStandardMaterial color={liquidColor} /></mesh>
         <mesh position={[0, 0.115, 0]} rotation={[Math.PI / 2, 0, 0]}><torusGeometry args={[0.145, 0.014, 6, 14]} /><meshStandardMaterial color="#9b806b" roughness={0.8} /></mesh>
       </group>
-      <mesh ref={stream} visible={false} position={[0.04, 0.18, 0.12]} rotation={[0.35, 0, -0.38]}>
-        <cylinderGeometry args={[0.025, 0.018, 0.58, 7]} /><meshStandardMaterial color={liquidColor} transparent opacity={0.76} />
+      <mesh ref={stream} visible={false} position={[0.06, 0.21, 0.08]} rotation={[0, 0, -0.7]}>
+        <cylinderGeometry args={[0.018, 0.012, 0.54, 7]} /><meshStandardMaterial color={liquidColor} transparent opacity={0.82} emissive={liquidColor} emissiveIntensity={0.06} />
       </mesh>
-      <mesh ref={secondStream} visible={false} position={[0.51, 0.12, 0.18]} rotation={[0.35, 0, -0.42]}>
-        <cylinderGeometry args={[0.022, 0.016, 0.46, 7]} /><meshStandardMaterial color={liquidColor} transparent opacity={0.76} />
+      <mesh ref={secondStream} visible={false} position={[0.58, 0.11, 0.08]} rotation={[0, 0, -0.72]}>
+        <cylinderGeometry args={[0.017, 0.011, 0.38, 7]} /><meshStandardMaterial color={liquidColor} transparent opacity={0.82} emissive={liquidColor} emissiveIntensity={0.06} />
       </mesh>
-      {[0, 1, 2].map((index) => <mesh key={index} position={[0.58 + index * 0.05, 0.28 + index * 0.18, 0.18]} scale={0.8 - index * 0.16}>
+      {[0, 1, 2].map((index) => <mesh key={index} position={[0.72 + index * 0.05, 0.28 + index * 0.18, 0.08]} scale={0.8 - index * 0.16}>
         <sphereGeometry args={[0.055, 8, 8]} /><meshBasicMaterial color="#f7f4ec" transparent opacity={ritual === "serving" || ritual === "complete" ? 0.22 : 0} />
       </mesh>)}
     </group>

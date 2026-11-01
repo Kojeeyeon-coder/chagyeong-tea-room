@@ -6,7 +6,7 @@ import type { LocalPresence, RabbitIdentity, RoomSnapshot } from "@/lib/chagyeon
 type SessionResponse = RabbitIdentity & { spawn: { x: number; z: number } };
 type ConnectionState = "entering" | "online" | "reconnecting" | "full" | "error";
 
-const EMPTY_ROOM: RoomSnapshot = { people: [], occupiedSeats: {}, serverTime: 0 };
+const EMPTY_ROOM: RoomSnapshot = { people: [], occupiedSeats: {}, tableHosts: {}, serverTime: 0 };
 
 export function useTeaRoom() {
   const [identity, setIdentity] = useState<RabbitIdentity | null>(null);
@@ -19,6 +19,7 @@ export function useTeaRoom() {
   });
   const identityRef = useRef(identity);
   const localRef = useRef(local);
+  const greetTimer = useRef<number | null>(null);
   identityRef.current = identity;
   localRef.current = local;
 
@@ -48,8 +49,10 @@ export function useTeaRoom() {
   }, [sendPresence]);
 
   const fetchRoom = useCallback(async () => {
+    const active = identityRef.current;
+    if (!active) return;
     try {
-      const response = await fetch("/api/presence", { cache: "no-store" });
+      const response = await fetch(`/api/presence?room=${encodeURIComponent(active.roomId)}`, { cache: "no-store" });
       if (!response.ok) throw new Error("room");
       setRoom(await response.json() as RoomSnapshot);
       setConnection("online");
@@ -123,19 +126,25 @@ export function useTeaRoom() {
     const active = identityRef.current;
     const seatId = localRef.current.seatId;
     if (!active || !seatId) return;
+    updateLocal({ seatId: null, state: "walking", ritual: "idle", actionStartedAt: Date.now() }, true);
     await fetch(`/api/seats/${seatId}/claim`, {
       method: "DELETE", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ sessionId: active.sessionId, token: active.token }),
     }).catch(() => null);
-    updateLocal({ seatId: null, state: "walking", ritual: "idle", actionStartedAt: Date.now() }, true);
     await fetchRoom();
   }, [fetchRoom, updateLocal]);
 
   const greet = useCallback(() => {
-    const restingState = localRef.current.seatId ? "sitting" : "walking";
+    if (greetTimer.current) window.clearTimeout(greetTimer.current);
     updateLocal({ state: "greeting", actionStartedAt: Date.now() }, true);
-    window.setTimeout(() => updateLocal({ state: restingState, actionStartedAt: null }, true), 1_600);
+    greetTimer.current = window.setTimeout(() => {
+      const nextState = localRef.current.seatId ? "sitting" : "walking";
+      updateLocal({ state: nextState, actionStartedAt: null }, true);
+      greetTimer.current = null;
+    }, 1_600);
   }, [updateLocal]);
+
+  useEffect(() => () => { if (greetTimer.current) window.clearTimeout(greetTimer.current); }, []);
 
   return { identity, room, connection, message, local, updateLocal, claimSeat, leaveSeat, greet, retry: enter };
 }
