@@ -235,7 +235,9 @@ function OctagonalWindow({ side, z }: { side: -1 | 1; z: number }) {
     <mesh><circleGeometry args={[1.11, 8]} /><meshStandardMaterial color="#e9e3d4" transparent opacity={0.16} side={THREE.DoubleSide} depthWrite={false} /></mesh>
     <mesh position={[0, 0, 0.04]}><torusGeometry args={[1.04, 0.085, 6, 8]} /><meshStandardMaterial color="#694932" /></mesh>
     <mesh position={[0, 0, 0.055]}><torusGeometry args={[0.87, 0.035, 5, 8]} /><meshStandardMaterial color="#987154" /></mesh>
-    {[0, Math.PI / 2, Math.PI / 4, -Math.PI / 4].map((turn) => <mesh key={turn} position={[0, 0, 0.06]} rotation={[0, 0, turn]}><boxGeometry args={[1.72, 0.045, 0.055]} /><meshStandardMaterial color="#7f5b42" /></mesh>)}
+    {[-0.42, 0, 0.42].map((offset) => <mesh key={`window-v-${offset}`} position={[offset, 0, 0.06]}><boxGeometry args={[0.04, 1.62 - Math.abs(offset) * 0.4, 0.055]} /><meshStandardMaterial color="#7f5b42" /></mesh>)}
+    {[-0.42, 0, 0.42].map((offset) => <mesh key={`window-h-${offset}`} position={[0, offset, 0.06]}><boxGeometry args={[1.62 - Math.abs(offset) * 0.4, 0.04, 0.055]} /><meshStandardMaterial color="#7f5b42" /></mesh>)}
+    <mesh position={[0, 0, 0.075]} rotation={[0, 0, Math.PI / 4]}><boxGeometry args={[0.27, 0.27, 0.045]} /><meshStandardMaterial color="#a17a5c" /></mesh>
   </group>;
 }
 
@@ -252,6 +254,7 @@ function SideLandscape({ side }: { side: -1 | 1 }) {
 
 function CeilingStructure() {
   return <group>
+    <mesh receiveShadow position={[0, 4.02, 0.35]}><boxGeometry args={[27.8, 0.12, 16.8]} /><meshStandardMaterial color="#4b372c" roughness={0.95} side={THREE.DoubleSide} /></mesh>
     <mesh castShadow receiveShadow position={[-6.85, 4.35, 0.35]} rotation={[0, 0, -0.105]}><boxGeometry args={[13.8, 0.16, 16.8]} /><meshStandardMaterial color="#5b4434" roughness={0.92} /></mesh>
     <mesh castShadow receiveShadow position={[6.85, 4.35, 0.35]} rotation={[0, 0, 0.105]}><boxGeometry args={[13.8, 0.16, 16.8]} /><meshStandardMaterial color="#5b4434" roughness={0.92} /></mesh>
     <mesh castShadow position={[0, 4.98, 0.35]}><boxGeometry args={[0.3, 0.34, 17]} /><meshStandardMaterial color="#3f3027" /></mesh>
