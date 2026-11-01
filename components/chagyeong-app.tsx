@@ -1,20 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { Leaf, LogOut, Moon, Rabbit as RabbitIcon, Rotate3D, Sparkles, Sun, Users } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Armchair, Coffee, CupSoda, Leaf, Moon, Rabbit as RabbitIcon, Sparkles, Sun, Users } from "lucide-react";
 import { TEAS, TEAWARE, RITUAL_COPY } from "@/lib/catalog";
-import type { TeaRitualState } from "@/lib/chagyeong-types";
 import { getTimeOfDay, type TimeOfDay } from "@/lib/time-of-day";
+import { SEAT_POSITIONS } from "@/lib/navigation";
 import { useTeaRoom } from "@/hooks/use-tea-room";
 import { TeaRoomScene } from "./tea-room-scene";
-
-const NEXT_RITUAL: Record<TeaRitualState, TeaRitualState> = {
-  idle: "preparing", preparing: "brewing", brewing: "serving", serving: "sipping", sipping: "complete", complete: "idle",
-};
-
-const RITUAL_ACTION: Record<TeaRitualState, string> = {
-  idle: "차 우리기 시작", preparing: "물을 천천히 붓기", brewing: "차를 잔에 따르기", serving: "찻잔 들어 보기", sipping: "한 모금 마시기", complete: "한 잔 더 우리기",
-};
 
 function hasWebGL() {
   try {
@@ -28,6 +20,9 @@ export function ChagyeongApp() {
   const [notice, setNotice] = useState("바닥을 누르면 토끼가 그곳으로 걸어가요");
   const [webgl, setWebgl] = useState(true);
   const [timeOfDay, setTimeOfDay] = useState<TimeOfDay>("day");
+  const [teaPanelOpen, setTeaPanelOpen] = useState(false);
+  const [seatRequest, setSeatRequest] = useState<{ seatId: string; nonce: number } | null>(null);
+  const ritualTimers = useRef<number[]>([]);
 
   useEffect(() => {
     setWebgl(hasWebGL());
@@ -37,6 +32,8 @@ export function ChagyeongApp() {
     const timer = window.setInterval(update, 60_000);
     return () => window.clearInterval(timer);
   }, []);
+
+  useEffect(() => () => ritualTimers.current.forEach((timer) => window.clearTimeout(timer)), []);
 
   const showNotice = useCallback((text: string) => {
     setNotice(text);
@@ -50,20 +47,64 @@ export function ChagyeongApp() {
     teaRoom.updateLocal({ tea: tea.id, teaware: tea.recommended, ritual: "idle", state: "sitting", actionStartedAt: Date.now() }, true);
   };
 
-  const advanceRitual = () => {
-    const tea = selectedTea ?? TEAS[0];
-    const current = teaRoom.local.ritual;
-    const next = NEXT_RITUAL[current];
-    const state = next === "sipping" ? "drinking" : next === "complete" || next === "idle" ? "sitting" : "brewing";
-    teaRoom.updateLocal({
-      tea: tea.id,
-      teaware: teaRoom.local.teaware ?? tea.recommended,
-      ritual: next,
-      state,
-      actionStartedAt: Date.now(),
-    }, true);
-    showNotice(RITUAL_COPY[next]);
+  const clearRitualTimers = useCallback(() => {
+    ritualTimers.current.forEach((timer) => window.clearTimeout(timer));
+    ritualTimers.current = [];
+  }, []);
+
+  const requestNearestSeat = () => {
+    if (teaRoom.local.seatId) {
+      clearRitualTimers();
+      setTeaPanelOpen(false);
+      void teaRoom.leaveSeat();
+      return;
+    }
+    const available = SEAT_POSITIONS
+      .filter((seat) => !teaRoom.room.occupiedSeats[seat.id])
+      .sort((a, b) => Math.hypot(a.x - teaRoom.local.position.x, a.z - teaRoom.local.position.z) - Math.hypot(b.x - teaRoom.local.position.x, b.z - teaRoom.local.position.z));
+    if (!available[0]) {
+      showNotice("지금은 빈 자리가 없어요");
+      return;
+    }
+    setSeatRequest({ seatId: available[0].id, nonce: Date.now() });
+    showNotice("가까운 빈 자리로 걸어갈게요");
   };
+
+  const startBrewing = useCallback(() => {
+    if (!teaRoom.local.seatId) {
+      showNotice("먼저 하단의 자리에 앉기를 눌러 주세요");
+      return;
+    }
+    if (!selectedTea || !teaRoom.local.teaware) {
+      setTeaPanelOpen(true);
+      showNotice("차와 다구를 먼저 골라 주세요");
+      return;
+    }
+    if (["preparing", "brewing", "serving", "sipping"].includes(teaRoom.local.ritual)) return;
+    clearRitualTimers();
+    setTeaPanelOpen(false);
+    const setStage = (ritual: "preparing" | "brewing" | "serving", message: string) => {
+      teaRoom.updateLocal({ ritual, state: "brewing", actionStartedAt: Date.now() }, true);
+      showNotice(message);
+    };
+    setStage("preparing", RITUAL_COPY.preparing);
+    ritualTimers.current.push(window.setTimeout(() => setStage("brewing", RITUAL_COPY.brewing), 1_500));
+    ritualTimers.current.push(window.setTimeout(() => setStage("serving", "차가 잔에 담겼어요. 이제 차 마시기를 눌러 보세요"), 4_000));
+  }, [clearRitualTimers, selectedTea, showNotice, teaRoom.local.ritual, teaRoom.local.seatId, teaRoom.local.teaware, teaRoom.updateLocal]);
+
+  const drinkTea = useCallback(() => {
+    if (teaRoom.local.ritual !== "serving") {
+      showNotice(teaRoom.local.seatId ? "차가 다 우러날 때까지 잠시 기다려 주세요" : "먼저 자리에 앉아 차를 우려 주세요");
+      return;
+    }
+    clearRitualTimers();
+    teaRoom.updateLocal({ ritual: "sipping", state: "drinking", actionStartedAt: Date.now() }, true);
+    showNotice(RITUAL_COPY.sipping);
+    ritualTimers.current.push(window.setTimeout(() => {
+      teaRoom.updateLocal({ ritual: "complete", state: "sitting", actionStartedAt: Date.now() }, true);
+      showNotice(RITUAL_COPY.complete);
+    }, 2_000));
+  }, [clearRitualTimers, showNotice, teaRoom.local.ritual, teaRoom.local.seatId, teaRoom.updateLocal]);
 
   if (!webgl) return (
     <main className="fallback-screen"><div className="fallback-card"><Leaf size={30} /><p className="eyebrow">차경 茶境</p><h1>이 브라우저에서는 3D 다실을 열 수 없어요</h1><p>WebGL을 지원하는 최신 Chrome, Edge, Safari에서 다시 방문해 주세요.</p></div></main>
@@ -91,7 +132,7 @@ export function ChagyeongApp() {
   return (
     <main className={`chagyeong-shell time-${timeOfDay}`}>
       <section className="scene" aria-label="차경 3D 다실">
-        <TeaRoomScene identity={identity} local={teaRoom.local} room={teaRoom.room} timeOfDay={timeOfDay} onMove={teaRoom.updateLocal} onClaimSeat={teaRoom.claimSeat} onNotice={showNotice} />
+        <TeaRoomScene identity={identity} local={teaRoom.local} room={teaRoom.room} timeOfDay={timeOfDay} seatRequest={seatRequest} onMove={teaRoom.updateLocal} onClaimSeat={teaRoom.claimSeat} onNotice={showNotice} />
       </section>
 
       <header className="topbar">
@@ -120,14 +161,18 @@ export function ChagyeongApp() {
       <div className="notice" aria-live="polite">{notice}</div>
 
       <nav className="action-dock" aria-label="토끼 행동">
-        <button onClick={teaRoom.greet} disabled={teaRoom.connection !== "online"}><Sparkles size={18} /><span>꾸벅 인사</span></button>
-        {teaRoom.local.seatId && <button onClick={() => void teaRoom.leaveSeat()}><LogOut size={18} /><span>자리에서 일어나기</span></button>}
-        <span className="control-hint"><Rotate3D size={17} /> 바닥 클릭 · 드래그 회전 · 휠 확대</span>
+        <button onClick={teaRoom.greet} disabled={teaRoom.connection !== "online"}><Sparkles size={19} /><span>인사하기</span></button>
+        <button className={teaRoom.local.seatId ? "active" : ""} onClick={requestNearestSeat} disabled={teaRoom.connection !== "online"}><Armchair size={19} /><span>{teaRoom.local.seatId ? "일어나기" : "자리에 앉기"}</span></button>
+        <button className={teaPanelOpen || teaRoom.local.state === "brewing" ? "active" : ""} onClick={() => {
+          if (!teaRoom.local.tea || !teaRoom.local.teaware) setTeaPanelOpen(true);
+          else void startBrewing();
+        }} disabled={!teaRoom.local.seatId || ["preparing", "brewing", "serving", "sipping"].includes(teaRoom.local.ritual)}><Coffee size={19} /><span>{["preparing", "brewing"].includes(teaRoom.local.ritual) ? "우리는 중" : teaRoom.local.ritual === "complete" ? "한 잔 더" : "차 우리기"}</span></button>
+        <button className={teaRoom.local.state === "drinking" ? "active" : ""} onClick={drinkTea} disabled={teaRoom.local.ritual !== "serving"}><CupSoda size={19} /><span>차 마시기</span></button>
       </nav>
 
-      {teaRoom.local.seatId && (
+      {teaRoom.local.seatId && teaPanelOpen && (
         <aside className="tea-panel" aria-label="차와 다구 선택">
-          <div className="panel-heading"><div><p className="eyebrow">오늘의 찻상</p><h2>어떤 차를 우릴까요?</h2></div><span className="seat-label">{teaRoom.local.seatId.replace("seat-", "자리 ")}</span></div>
+          <div className="panel-heading"><div><p className="eyebrow">오늘의 찻상</p><h2>차와 다구를 골라 주세요</h2></div><button className="panel-close" onClick={() => setTeaPanelOpen(false)} aria-label="차 선택 닫기">×</button></div>
           <div className="tea-grid" role="list" aria-label="차 종류">
             {TEAS.map((tea) => <button key={tea.id} className={teaRoom.local.tea === tea.id ? "selected" : ""} onClick={() => selectTea(tea.id)} disabled={teaRoom.local.ritual !== "idle" && teaRoom.local.ritual !== "complete"} style={{ "--tea-color": tea.color } as React.CSSProperties}><span>{tea.hanja}</span><strong>{tea.name}</strong></button>)}
           </div>
@@ -137,7 +182,7 @@ export function ChagyeongApp() {
             {TEAWARE.map((ware) => <button key={ware.id} className={teaRoom.local.teaware === ware.id ? "selected" : ""} onClick={() => teaRoom.updateLocal({ teaware: ware.id, ritual: "idle" }, true)} disabled={teaRoom.local.ritual !== "idle" && teaRoom.local.ritual !== "complete"}><strong>{ware.name}</strong><small>{ware.note}</small></button>)}
           </div>
           <div className="ritual-status"><span className={`ritual-orb ritual-${teaRoom.local.ritual}`} /><div><small>지금</small><strong>{RITUAL_COPY[teaRoom.local.ritual]}</strong></div></div>
-          <button className="primary-button ritual-button" onClick={advanceRitual}>{RITUAL_ACTION[teaRoom.local.ritual]}</button>
+          <button className="primary-button ritual-button" onClick={startBrewing} disabled={!selectedTea || !teaRoom.local.teaware}>선택 완료 · 차 우리기</button>
         </aside>
       )}
     </main>

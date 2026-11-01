@@ -16,6 +16,7 @@ type SceneProps = {
   local: LocalPresence;
   room: RoomSnapshot;
   timeOfDay: TimeOfDay;
+  seatRequest: { seatId: string; nonce: number } | null;
   onMove: (patch: Partial<LocalPresence>) => void;
   onClaimSeat: (seatId: string) => Promise<{ ok: boolean; message: string }>;
   onNotice: (message: string) => void;
@@ -41,16 +42,21 @@ function Lighting({ mode }: { mode: TimeOfDay }) {
   );
 }
 
-function CameraRig({ target }: { target: React.RefObject<THREE.Group | null> }) {
+function CameraRig({ target, focus }: { target: React.RefObject<THREE.Group | null>; focus: boolean }) {
   const controls = useRef<any>(null);
-  useFrame((_, delta) => {
+  useFrame(({ camera }, delta) => {
     if (!controls.current || !target.current) return;
     const desired = target.current.position.clone();
-    desired.y = 0.75;
+    desired.y = focus ? 1 : 0.75;
     controls.current.target.lerp(desired, 1 - Math.exp(-delta * 5));
+    if (focus) {
+      const offset = camera.position.clone().sub(controls.current.target).normalize().multiplyScalar(5.4);
+      offset.y = Math.max(offset.y, 2.7);
+      camera.position.lerp(desired.clone().add(offset), 1 - Math.exp(-delta * 2.8));
+    }
     controls.current.update();
   });
-  return <OrbitControls ref={controls} makeDefault enablePan={false} minDistance={7} maxDistance={18} minPolarAngle={0.55} maxPolarAngle={1.18} rotateSpeed={0.55} zoomSpeed={0.7} />;
+  return <OrbitControls ref={controls} makeDefault enablePan={false} minDistance={focus ? 4.5 : 7} maxDistance={18} minPolarAngle={0.55} maxPolarAngle={1.18} rotateSpeed={0.55} zoomSpeed={0.7} />;
 }
 
 function Player({ identity, local, pathRef, positionRef, groupRef, queuedSeatRef, onMove, onArriveSeat }: {
@@ -183,6 +189,7 @@ function World(props: SceneProps) {
   const queuedSeatRef = useRef<string | null>(null);
   const localPositionRef = useRef({ ...props.local.position });
   const playerRef = useRef<THREE.Group>(null);
+  const handledSeatRequest = useRef(0);
 
   const requestSeat = (seatId: string) => {
     const seat = SEAT_POSITIONS.find((candidate) => candidate.id === seatId);
@@ -203,6 +210,12 @@ function World(props: SceneProps) {
     pathRef.current = findPath(localPositionRef.current, { x: seat.x, z: seat.z });
     props.onNotice("빈 자리로 천천히 가는 중이에요");
   };
+
+  useEffect(() => {
+    if (!props.seatRequest || handledSeatRequest.current === props.seatRequest.nonce) return;
+    handledSeatRequest.current = props.seatRequest.nonce;
+    requestSeat(props.seatRequest.seatId);
+  }, [props.seatRequest]);
 
   const handleFloor = (event: ThreeEvent<PointerEvent>) => {
     if (event.delta > 7 || props.local.seatId) return;
@@ -227,7 +240,7 @@ function World(props: SceneProps) {
         <Rabbit key={person.sessionId} variant={person.variant} name={person.displayName} state={person.state} position={person.position} rotation={person.rotation} />
       ))}
       <RemoteTeaServices people={props.room.people} />
-      <CameraRig target={playerRef} />
+      <CameraRig target={playerRef} focus={props.local.state === "brewing" || props.local.state === "drinking"} />
     </>
   );
 }
