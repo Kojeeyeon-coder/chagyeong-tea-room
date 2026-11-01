@@ -1,14 +1,14 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Armchair, BellRing, CloudRain, Coffee, CupSoda, Leaf, Moon, Rabbit as RabbitIcon, Snowflake, Sparkles, Sun, Users, Volume2, VolumeX } from "lucide-react";
+import { Armchair, Camera, ChevronDown, CloudRain, Coffee, CupSoda, Leaf, Moon, Pencil, Rabbit as RabbitIcon, Snowflake, Sparkles, Sun, Users, Volume2, VolumeX } from "lucide-react";
 import { TEAS, TEAWARE, RITUAL_COPY } from "@/lib/catalog";
 import { getTimeOfDay, type TimeOfDay } from "@/lib/time-of-day";
 import { SEAT_POSITIONS } from "@/lib/navigation";
-import { ROOM_NAMES } from "@/lib/chagyeong-types";
+import { ROOM_IDS, ROOM_NAMES, type RoomId } from "@/lib/chagyeong-types";
 import { getTeaRoomWeather, weatherFromWmoCode, type TeaRoomWeather } from "@/lib/weather";
 import { useTeaRoom } from "@/hooks/use-tea-room";
-import { useAmbientSound, useWindChime } from "@/hooks/use-ambient-sound";
+import { useAmbientSound } from "@/hooks/use-ambient-sound";
 import { TeaRoomScene } from "./tea-room-scene";
 
 function hasWebGL() {
@@ -38,13 +38,13 @@ export function ChagyeongApp() {
   const [weather, setWeather] = useState<TeaRoomWeather>("clear");
   const [weatherLocal, setWeatherLocal] = useState(false);
   const ambient = useAmbientSound(weather);
-  const chime = useWindChime();
   const [notice, setNotice] = useState("바닥을 누르면 토끼가 그곳으로 걸어가요");
   const [webgl, setWebgl] = useState(true);
   const [timeOfDay, setTimeOfDay] = useState<TimeOfDay>("day");
   const [teaPanelOpen, setTeaPanelOpen] = useState(false);
   const [seatPanelOpen, setSeatPanelOpen] = useState(false);
   const [namePanelOpen, setNamePanelOpen] = useState(false);
+  const [roomPanelOpen, setRoomPanelOpen] = useState(false);
   const [nameDraft, setNameDraft] = useState("");
   const [pourReady, setPourReady] = useState(false);
   const [seatRequest, setSeatRequest] = useState<{ seatId: string; nonce: number } | null>(null);
@@ -137,7 +137,6 @@ export function ChagyeongApp() {
     if (person.sessionId === teaRoom.identity?.sessionId || !person.seatId) return false;
     return SEAT_POSITIONS.find((seat) => seat.id === person.seatId)?.table === currentSeat.table;
   }) : [];
-  const requestedTea = tablemates.some((person) => person.state === "requesting");
   const isSharedGuest = currentSeat?.kind === "shared" && teaRoom.room.tableHosts[String(currentSeat.table)] !== teaRoom.identity?.sessionId;
   const sharedPourReady = isSharedGuest && tablemates.some((person) => person.state === "pouring");
   const socialAction = (state: "requesting" | "pouring") => {
@@ -145,14 +144,31 @@ export function ChagyeongApp() {
       showNotice("같은 찻상에 다른 토끼가 앉으면 할 수 있어요");
       return;
     }
-    if (state === "pouring" && !requestedTea) {
-      showNotice("차를 기다리는 토끼가 아직 없어요");
-      return;
-    }
     if (socialTimer.current) window.clearTimeout(socialTimer.current);
     teaRoom.updateLocal({ state, actionStartedAt: Date.now() }, true);
     showNotice(state === "requesting" ? "찻잔을 살며시 내밀었어요" : "숙우에서 잔으로 차를 나누어요");
-    socialTimer.current = window.setTimeout(() => teaRoom.updateLocal({ state: "sitting", actionStartedAt: Date.now() }, true), 4_000);
+    socialTimer.current = window.setTimeout(() => teaRoom.updateLocal({ state: "sitting", actionStartedAt: Date.now() }, true), state === "requesting" ? 8_000 : 6_000);
+  };
+
+  const captureScene = () => {
+    const canvas = document.querySelector<HTMLCanvasElement>(".scene canvas");
+    if (!canvas) return showNotice("사진을 준비하지 못했어요");
+    canvas.toBlob((blob) => {
+      if (!blob) return showNotice("사진을 준비하지 못했어요");
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `chagyeong-${new Date().toISOString().slice(0, 10)}.png`;
+      link.click();
+      window.setTimeout(() => URL.revokeObjectURL(url), 1_000);
+      showNotice("지금 바라보는 다실을 저장했어요");
+    }, "image/png");
+  };
+
+  const moveRoom = async (roomId: RoomId) => {
+    setRoomPanelOpen(false);
+    const result = await teaRoom.switchRoom(roomId);
+    showNotice(result.message);
   };
 
   const drinkSharedTea = () => {
@@ -245,8 +261,10 @@ export function ChagyeongApp() {
       <header className="topbar">
         <div className="brand-lockup"><span className="mini-seal"><Leaf size={15} /></span><div><strong>차경</strong><small>茶境</small></div></div>
         <div className="room-actions">
+          <button className="room-switch" onClick={() => setRoomPanelOpen((open) => !open)} aria-expanded={roomPanelOpen} aria-label="다실 서버 선택">
+            <Leaf size={14} /><span>{ROOM_NAMES[identity.roomId]}</span><ChevronDown size={13} />
+          </button>
           <div className="room-pills">
-            <span><Leaf size={14} /> {ROOM_NAMES[identity.roomId]}</span>
             <span><Users size={15} /> {peopleCount} / 20</span>
             <span><TimeIcon size={15} /> {timeLabel}</span>
             <span title={weatherLocal ? "현재 위치의 날씨" : "위치 권한이 없으면 차경의 날씨를 보여줘요"}>{weather === "rain" ? <CloudRain size={15} /> : weather === "snow" ? <Snowflake size={15} /> : <Sun size={15} />} {weather === "rain" ? "정원에 비" : weather === "snow" ? "정원에 눈" : weatherLocal ? "맑은 정원" : "차경의 날씨"}</span>
@@ -255,15 +273,22 @@ export function ChagyeongApp() {
           <button className={`sound-toggle ${ambient.enabled ? "active" : ""}`} onClick={ambient.toggle} aria-pressed={ambient.enabled} aria-label={ambient.enabled ? "고요한 배경음 끄기" : "고요한 배경음 켜기"}>
             {ambient.enabled ? <Volume2 size={16} /> : <VolumeX size={16} />}<span>{ambient.enabled ? "소리 켬" : "소리 끔"}</span>
           </button>
-          <button className={`sound-toggle ${chime.enabled ? "active" : ""}`} onClick={chime.toggle} aria-pressed={chime.enabled} aria-label={chime.enabled ? "풍경 소리 끄기" : "풍경 소리 켜기"}>
-            <BellRing size={16} /><span>{chime.enabled ? "풍경 켬" : "풍경 끔"}</span>
+          <button className="sound-toggle" onClick={captureScene} aria-label="다실 스크린샷 저장하기">
+            <Camera size={16} /><span>사진</span>
           </button>
         </div>
       </header>
 
+      {roomPanelOpen && <aside className="room-panel" aria-label="다실 서버 선택">
+        <small>머무를 다실</small>
+        {ROOM_IDS.map((roomId) => <button key={roomId} className={roomId === identity.roomId ? "active" : ""} onClick={() => void moveRoom(roomId)} disabled={roomId === identity.roomId}>
+          <span>{ROOM_NAMES[roomId]}</span><i>{roomId === identity.roomId ? "머무는 중" : "들어가기"}</i>
+        </button>)}
+      </aside>}
+
       <button className="identity-card" onClick={() => { setNameDraft(identity.displayName); setNamePanelOpen((open) => !open); }} aria-expanded={namePanelOpen}>
         <RabbitIcon size={17} />
-        <div><small>오늘의 토끼 · 이름 바꾸기</small><strong>{identity.displayName}</strong></div>
+        <div><small>오늘의 토끼</small><strong>{identity.displayName}</strong></div><Pencil className="identity-edit" size={12} />
       </button>
       {namePanelOpen && <form className="name-panel" onSubmit={saveName}>
         <label htmlFor="rabbit-name">오늘 머무를 이름</label>
@@ -306,7 +331,7 @@ export function ChagyeongApp() {
         <aside className="shared-actions" aria-label="합석 행동">
           <span>{tablemates.length ? `${tablemates.length + 1}마리가 함께 머무는 중` : "누군가 오기를 기다리는 중"}</span>
           <button onClick={() => socialAction("requesting")} disabled={!tablemates.length || teaRoom.local.state === "brewing"}>차 요청하기</button>
-          <button onClick={() => socialAction("pouring")} disabled={!requestedTea || teaRoom.local.state === "brewing"}>차 따라주기</button>
+          <button onClick={() => socialAction("pouring")} disabled={!tablemates.length || teaRoom.local.state === "brewing"}>차 따라주기</button>
         </aside>
       )}
 

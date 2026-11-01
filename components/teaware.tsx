@@ -129,15 +129,15 @@ export function TeaService({ kind, ritual, color = "#9b744b", socialPour = false
           <mesh position={[-0.39, 0.05, 0]}><torusGeometry args={[0.22, 0.045, 8, 14, Math.PI]} /><meshStandardMaterial color={clay} /></mesh>
         </>}
       </group>
-      <group ref={fairness} position={[0.12, 0, 0.12]}>
+      <group ref={fairness} position={[0.18, 0, -0.46]} renderOrder={3}>
         <mesh position={[0, -0.012, 0]} scale={[0.78, 0.9, 0.78]}><cylinderGeometry args={[0.19, 0.12, 0.28, 14]} /><meshStandardMaterial color={liquidColor} transparent opacity={0.94} roughness={0.3} /></mesh>
-        <mesh castShadow scale={[1, 1.14, 1]}><cylinderGeometry args={[0.21, 0.14, 0.34, 14]} /><meshStandardMaterial color="#d6e5e1" transparent opacity={0.82} roughness={0.14} metalness={0.03} depthWrite /></mesh>
+        <mesh castShadow scale={[1, 1.14, 1]}><cylinderGeometry args={[0.21, 0.14, 0.34, 14]} /><meshStandardMaterial color="#d6e5e1" transparent opacity={0.7} roughness={0.14} metalness={0.03} depthWrite={false} /></mesh>
         <mesh castShadow position={[0.2, 0.07, 0]} rotation={[0, 0, -Math.PI / 2]}><coneGeometry args={[0.08, 0.27, 9]} /><meshStandardMaterial color="#eaf2ef" transparent opacity={0.68} roughness={0.1} metalness={0.08} /></mesh>
         <mesh position={[-0.19, 0.04, 0]}><torusGeometry args={[0.145, 0.03, 7, 12, Math.PI]} /><meshStandardMaterial color="#dfeae6" transparent opacity={0.86} roughness={0.1} metalness={0.08} /></mesh>
         <mesh position={[0, 0.18, 0]}><cylinderGeometry args={[0.145, 0.145, 0.016, 14]} /><meshStandardMaterial color={liquidColor} transparent opacity={0.9} /></mesh>
         <mesh position={[0, 0.188, 0]} rotation={[Math.PI / 2, 0, 0]}><torusGeometry args={[0.17, 0.016, 7, 14]} /><meshStandardMaterial color="#f0f7f4" transparent opacity={0.95} roughness={0.14} /></mesh>
       </group>
-      <group position={[0.58, -0.09, 0.06]}>
+      <group position={[0.62, -0.09, -0.12]}>
         <mesh castShadow><cylinderGeometry args={[0.17, 0.12, 0.2, 14]} /><meshStandardMaterial color="#eee8dd" /></mesh>
         <mesh position={[0, 0.11, 0]}><cylinderGeometry args={[0.115, 0.115, 0.018, 14]} /><meshStandardMaterial color={liquidColor} /></mesh>
         <mesh position={[0, 0.115, 0]} rotation={[Math.PI / 2, 0, 0]}><torusGeometry args={[0.145, 0.014, 6, 14]} /><meshStandardMaterial color="#9b806b" roughness={0.8} /></mesh>

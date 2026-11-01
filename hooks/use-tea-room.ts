@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { LocalPresence, RabbitIdentity, RoomSnapshot } from "@/lib/chagyeong-types";
+import type { LocalPresence, RabbitIdentity, RoomId, RoomSnapshot } from "@/lib/chagyeong-types";
 
 type SessionResponse = RabbitIdentity & { spawn: { x: number; z: number } };
 type ConnectionState = "entering" | "online" | "reconnecting" | "full" | "error";
@@ -160,7 +160,32 @@ export function useTeaRoom() {
     return { ok: true, message: "오늘의 이름을 바꾸었어요" };
   }, [connection, fetchRoom]);
 
+  const switchRoom = useCallback(async (roomId: RoomId) => {
+    const active = identityRef.current;
+    if (!active || connection !== "online") return { ok: false, message: "연결을 확인하고 다시 시도해 주세요" };
+    if (active.roomId === roomId) return { ok: true, message: "이미 이 다실에 머물고 있어요" };
+    const response = await fetch("/api/session/room", {
+      method: "PUT", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ sessionId: active.sessionId, token: active.token, roomId }),
+    });
+    if (!response.ok) return { ok: false, message: response.status === 409 ? "이 다실은 잠시 가득 찼어요" : "다실을 옮기지 못했어요" };
+    const data = await response.json() as { roomId: RoomId; displayName: string; spawn: { x: number; z: number } };
+    const nextIdentity = { ...active, roomId: data.roomId, displayName: data.displayName };
+    const nextLocal: LocalPresence = {
+      ...localRef.current, position: data.spawn, rotation: Math.PI, state: "walking", seatId: null,
+      ritual: "idle", actionStartedAt: null,
+    };
+    identityRef.current = nextIdentity;
+    localRef.current = nextLocal;
+    setIdentity(nextIdentity);
+    setLocalState(nextLocal);
+    setRoom(EMPTY_ROOM);
+    sessionStorage.setItem("chagyeong-rabbit", JSON.stringify(nextIdentity));
+    await fetchRoom();
+    return { ok: true, message: `${data.displayName}, 새 다실에 들어왔어요` };
+  }, [connection, fetchRoom]);
+
   useEffect(() => () => { if (greetTimer.current) window.clearTimeout(greetTimer.current); }, []);
 
-  return { identity, room, connection, message, local, updateLocal, claimSeat, leaveSeat, greet, rename, retry: enter };
+  return { identity, room, connection, message, local, updateLocal, claimSeat, leaveSeat, greet, rename, switchRoom, retry: enter };
 }
