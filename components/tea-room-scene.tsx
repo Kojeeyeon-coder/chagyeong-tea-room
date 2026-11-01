@@ -166,16 +166,16 @@ function TableFlower({ solo = false }: { solo?: boolean }) {
 function LowTable({ position }: { position: (typeof TABLE_POSITIONS)[number] }) {
   if (position.kind === "solo") return (
     <group position={[position.x, 0, position.z]}>
-      <mesh castShadow receiveShadow position={[0, 0.62, 0]}><boxGeometry args={[1.08, 0.13, 1.42]} /><meshStandardMaterial color="#9e7658" roughness={0.86} /></mesh>
-      <mesh castShadow position={[0, 0.3, 0]}><boxGeometry args={[0.14, 0.6, 0.88]} /><meshStandardMaterial color="#7e5d46" /></mesh>
+      <mesh castShadow receiveShadow position={[0, 0.62, 0]}><boxGeometry args={[1.08, 0.13, 1.42]} /><meshStandardMaterial color="#8f6243" roughness={0.86} /></mesh>
+      <mesh castShadow position={[0, 0.3, 0]}><boxGeometry args={[0.14, 0.6, 0.88]} /><meshStandardMaterial color="#674532" /></mesh>
       <TableFlower solo />
     </group>
   );
   return (
     <group position={[position.x, 0, position.z]}>
-      <mesh castShadow receiveShadow position={[0, 0.5, 0]}><cylinderGeometry args={[1.42, 1.5, 0.17, 8]} /><meshStandardMaterial color="#aa8564" roughness={0.88} /></mesh>
+      <mesh castShadow receiveShadow position={[0, 0.5, 0]}><cylinderGeometry args={[1.42, 1.5, 0.17, 8]} /><meshStandardMaterial color="#8e6040" roughness={0.88} /></mesh>
       {[[-0.82, 0.23, -0.82], [0.82, 0.23, -0.82], [-0.82, 0.23, 0.82], [0.82, 0.23, 0.82]].map((p, index) => (
-        <mesh key={index} castShadow position={p as [number, number, number]}><boxGeometry args={[0.14, 0.46, 0.14]} /><meshStandardMaterial color="#8b6b52" /></mesh>
+        <mesh key={index} castShadow position={p as [number, number, number]}><boxGeometry args={[0.14, 0.46, 0.14]} /><meshStandardMaterial color="#654632" /></mesh>
       ))}
       <TableFlower />
     </group>
@@ -269,6 +269,8 @@ function RoomDecor() {
       {TABLE_POSITIONS.filter((table) => table.kind === "shared").map((table, index) => <mesh key={`mat-${index}`} receiveShadow position={[table.x, 0.025, table.z]}><boxGeometry args={[4.15, 0.05, 2.85]} /><meshStandardMaterial color={index % 2 ? "#d8d4bc" : "#ded8c5"} roughness={1} /></mesh>)}
       {[-12, -9, -6, -3, 0, 3, 6, 9, 12].map((x) => <mesh key={`beam-${x}`} castShadow position={[x, 3.55, -6.92]}><boxGeometry args={[0.13, 0.28, 0.34]} /><meshStandardMaterial color="#8d6c50" /></mesh>)}
       <mesh castShadow position={[0, 3.55, -6.92]}><boxGeometry args={[27.6, 0.18, 0.34]} /><meshStandardMaterial color="#8d6c50" /></mesh>
+      {[-12, -8, -4, 0, 4, 8, 12].map((x) => <mesh key={`rear-post-${x}`} castShadow position={[x, 1.9, -6.86]}><boxGeometry args={[0.28, 3.8, 0.34]} /><meshStandardMaterial color="#5b3f2e" roughness={0.92} /></mesh>)}
+      {([-1, 1] as const).flatMap((side) => [-5.7, -1.8, 2.1, 6].map((z) => <mesh key={`side-post-${side}-${z}`} castShadow position={[side * 13.52, 1.95, z]}><boxGeometry args={[0.32, 3.9, 0.34]} /><meshStandardMaterial color="#5b3f2e" roughness={0.92} /></mesh>))}
       {[-10.4, -7.8, -5.2, -2.6, 0, 2.6, 5.2, 7.8, 10.4].map((x) => <ShojiPanel key={x} x={x} display={[-10.4, -5.2, 5.2, 10.4].includes(x)} />)}
       <group position={[-7.45, 1.82, -6.1]}>
         <mesh><boxGeometry args={[1.55, 2.45, 0.08]} /><meshStandardMaterial color="#d9d2bf" /></mesh>
@@ -309,7 +311,8 @@ function TeaRoom({ mode }: { mode: TimeOfDay }) {
   const candlePositions = [[-8.2, -5.1], [8.2, -5.1], [-8.2, 6.1], [8.2, 6.1]];
   return (
     <group>
-      <mesh receiveShadow position={[0, -0.08, 0]}><boxGeometry args={[28, 0.18, 16.8]} /><meshStandardMaterial color="#ede8dc" roughness={0.96} /></mesh>
+      <mesh receiveShadow position={[0, -0.08, 0]}><boxGeometry args={[28, 0.18, 16.8]} /><meshStandardMaterial color="#bd9672" roughness={0.9} /></mesh>
+      {[-6.8, -5.6, -4.4, -3.2, -2, -0.8, 0.4, 1.6, 2.8, 4, 5.2, 6.4].map((z) => <mesh key={`floor-plank-${z}`} position={[0, 0.016, z]}><boxGeometry args={[27.7, 0.012, 0.025]} /><meshStandardMaterial color="#806047" roughness={1} /></mesh>)}
       <mesh receiveShadow position={[0, -0.06, 10.8]}><boxGeometry args={[28, 0.14, 8.8]} /><meshStandardMaterial color="#cbd5c1" roughness={1} /></mesh>
       <mesh position={[0, 2.2, -7.45]}><planeGeometry args={[28, 5]} /><meshBasicMaterial color="#b8d2dd" /></mesh>
       <mesh castShadow receiveShadow position={[0, 0.22, -7.18]}><boxGeometry args={[28, 0.55, 0.22]} /><meshStandardMaterial color="#f2eee4" /></mesh>
