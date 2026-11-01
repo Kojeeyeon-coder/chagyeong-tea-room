@@ -43,7 +43,7 @@ function Lighting({ mode }: { mode: TimeOfDay }) {
   );
 }
 
-function CameraRig({ target, focus, moving }: { target: React.RefObject<THREE.Group | null>; focus: boolean; moving: boolean }) {
+function CameraRig({ target, focus, moving, seatId }: { target: React.RefObject<THREE.Group | null>; focus: boolean; moving: boolean; seatId: string | null }) {
   const controls = useRef<any>(null);
   const aligned = useRef(false);
   useFrame(({ camera }, delta) => {
@@ -54,7 +54,10 @@ function CameraRig({ target, focus, moving }: { target: React.RefObject<THREE.Gr
     if (!aligned.current || focus || moving) {
       const distance = focus ? 4.9 : 6.2;
       const forward = new THREE.Vector3(Math.sin(target.current.rotation.y), 0, Math.cos(target.current.rotation.y));
-      const cameraTarget = desired.clone().add(forward.multiplyScalar(distance));
+      const activeSeat = seatId ? SEAT_POSITIONS.find((seat) => seat.id === seatId) : null;
+      const cameraTarget = activeSeat?.kind === "solo" && focus
+        ? desired.clone().add(forward.multiplyScalar(1.05)).add(new THREE.Vector3(0, 0, 2.4))
+        : desired.clone().add(forward.multiplyScalar(distance));
       cameraTarget.y += focus ? 2.55 : 5.15;
       camera.position.lerp(cameraTarget, 1 - Math.exp(-delta * (focus ? 3.2 : 2.2)));
       aligned.current = true;
@@ -273,10 +276,10 @@ function teaServiceOffset(seatId: string, kind: "shared" | "solo") {
   if (kind === "solo") return { x: 0, z: 0 };
   const index = (Number(seatId.replace("seat-", "")) - 1) % 4;
   return [
-    { x: -0.62, z: -0.22 },
-    { x: 0.62, z: -0.22 },
-    { x: 0.62, z: 0.22 },
-    { x: -0.62, z: 0.22 },
+    { x: 0, z: -0.4 },
+    { x: 0.6, z: 0 },
+    { x: 0, z: 0.4 },
+    { x: -0.6, z: 0 },
   ][index] ?? { x: 0, z: 0 };
 }
 
@@ -287,8 +290,9 @@ function RemoteTeaServices({ people, localSessionId }: { people: PresenceSnapsho
     if (!seat || !person.teaware) return null;
     const table = TABLE_POSITIONS[seat.table];
     const offset = teaServiceOffset(seat.id, seat.kind);
+    const serviceRotation = seat.kind === "solo" ? 0 : seat.rotation;
     const teaColor = TEAS.find((tea) => tea.id === person.tea)?.color;
-    return <group key={person.sessionId} position={[table.x + offset.x, 0.58, table.z + offset.z]}><TeaService kind={person.teaware} ritual={person.ritual} color={teaColor} /></group>;
+    return <group key={person.sessionId} position={[table.x + offset.x, 0.58, table.z + offset.z]} rotation={[0, serviceRotation, 0]}><group position={[-0.05, 0, 0]}><TeaService kind={person.teaware} ritual={person.ritual} color={teaColor} /></group></group>;
   })}</>;
 }
 
@@ -352,10 +356,11 @@ function World(props: SceneProps) {
         if (!seat) return null;
         const table = TABLE_POSITIONS[seat.table];
         const offset = teaServiceOffset(seat.id, seat.kind);
-        return <group position={[table.x + offset.x, 0.58, table.z + offset.z]}><TeaService kind={props.local.teaware} ritual={props.local.ritual} color={TEAS.find((tea) => tea.id === props.local.tea)?.color} /></group>;
+        const serviceRotation = seat.kind === "solo" ? 0 : seat.rotation;
+        return <group position={[table.x + offset.x, 0.58, table.z + offset.z]} rotation={[0, serviceRotation, 0]}><group position={[-0.05, 0, 0]}><TeaService kind={props.local.teaware} ritual={props.local.ritual} color={TEAS.find((tea) => tea.id === props.local.tea)?.color} /></group></group>;
       })()}
       <RemoteTeaServices people={props.room.people} localSessionId={props.identity.sessionId} />
-      <CameraRig target={playerRef} focus={props.local.state === "brewing" || props.local.state === "drinking"} moving={props.local.state === "walking"} />
+      <CameraRig target={playerRef} focus={props.local.state === "brewing" || props.local.state === "drinking"} moving={props.local.state === "walking"} seatId={props.local.seatId} />
     </>
   );
 }

@@ -36,14 +36,33 @@ export function TeaService({ kind, ritual, color = "#9b744b" }: { kind: TeawareK
     root.current.position.y = 0.08 + ((preparing || brewing) ? Math.sin(t * 2.2) * 0.018 : 0);
     if (whisk.current) {
       whisk.current.visible = preparing || brewing;
-      whisk.current.position.x = brewing ? Math.sin(t * 12) * 0.23 : 0;
-      whisk.current.position.z = brewing ? Math.cos(t * 12) * 0.08 : 0;
-      whisk.current.rotation.x = brewing ? Math.cos(t * 12) * 0.1 : 0;
-      whisk.current.rotation.z = 0.14 + (brewing ? Math.sin(t * 12) * 0.2 : 0);
+      const whiskCycle = (t * 4.8) % 1;
+      const whiskPhase = whiskCycle * 4;
+      let whiskX = 0;
+      let whiskZ = -0.09;
+      if (whiskPhase < 1) {
+        whiskX = -0.23 + whiskPhase * 0.23;
+        whiskZ = 0.09 - whiskPhase * 0.18;
+      } else if (whiskPhase < 2) {
+        whiskX = (whiskPhase - 1) * 0.23;
+        whiskZ = -0.09 + (whiskPhase - 1) * 0.18;
+      } else if (whiskPhase < 3) {
+        whiskX = 0.23 - (whiskPhase - 2) * 0.23;
+        whiskZ = 0.09 - (whiskPhase - 2) * 0.18;
+      } else {
+        whiskX = -(whiskPhase - 3) * 0.23;
+        whiskZ = -0.09 + (whiskPhase - 3) * 0.18;
+      }
+      whisk.current.position.x = brewing ? whiskX : 0;
+      whisk.current.position.z = brewing ? whiskZ : 0;
+      whisk.current.rotation.x = brewing ? -0.22 + (whiskZ / 0.09) * 0.08 : -0.12;
+      whisk.current.rotation.z = 0.46 + (brewing ? (whiskX / 0.23) * 0.18 : 0);
     }
     if (foam.current) {
       foam.current.visible = brewing;
-      foam.current.rotation.y = t * 3.8;
+      foam.current.rotation.y = 0;
+      foam.current.position.x = Math.sin(t * 9.6) * 0.035;
+      foam.current.position.z = -0.015 + Math.abs(Math.sin(t * 4.8)) * 0.03;
       const pulse = 0.92 + Math.sin(t * 10) * 0.08;
       foam.current.scale.setScalar(pulse);
     }
@@ -52,7 +71,7 @@ export function TeaService({ kind, ritual, color = "#9b744b" }: { kind: TeawareK
       stream.current.scale.y = firstPour ? 0.82 + Math.sin(t * 8) * 0.08 : 0.01;
     }
     if (fairness.current) {
-      fairness.current.position.x = THREE.MathUtils.damp(fairness.current.position.x, secondPour ? 0.42 : 0.24, 7, delta);
+      fairness.current.position.x = THREE.MathUtils.damp(fairness.current.position.x, secondPour ? 0.38 : 0.18, 7, delta);
       fairness.current.position.y = THREE.MathUtils.damp(fairness.current.position.y, secondPour ? 0.32 : 0, 7, delta);
       fairness.current.rotation.z = THREE.MathUtils.damp(fairness.current.rotation.z, secondPour ? -0.7 : 0, 8, delta);
     }
@@ -68,6 +87,9 @@ export function TeaService({ kind, ritual, color = "#9b744b" }: { kind: TeawareK
         <mesh castShadow><cylinderGeometry args={[0.43, 0.3, 0.32, 20]} /><meshStandardMaterial color="#eee8dc" roughness={0.9} /></mesh>
         <mesh position={[0, 0.17, 0]}><cylinderGeometry args={[0.34, 0.34, 0.025, 20]} /><meshStandardMaterial color={liquidColor} roughness={0.55} /></mesh>
         <mesh position={[0, 0.19, 0]} rotation={[-Math.PI / 2, 0, 0]}><ringGeometry args={[0.08, 0.3, 20]} /><meshBasicMaterial color="#b8c98a" transparent opacity={ritual === "brewing" ? 0.9 : 0.35} /></mesh>
+        {[[-0.09, -0.55], [0.09, 0.55]].map(([x, turn], index) => <mesh key={`v-trail-${index}`} position={[x, 0.207, 0.035]} rotation={[0, turn, Math.PI / 2]}>
+          <cylinderGeometry args={[0.009, 0.016, 0.24, 5]} /><meshBasicMaterial color="#d8e3ad" transparent opacity={ritual === "brewing" ? 0.62 : 0} />
+        </mesh>)}
         <group ref={foam} position={[0, 0.205, 0]} visible={false}>
           {[[0.18, 0], [0.08, 0.15], [-0.13, 0.11], [-0.17, -0.08], [0.08, -0.16]].map(([x, z], index) => <mesh key={index} position={[x, 0, z]}><sphereGeometry args={[0.022 + index * 0.002, 7, 5]} /><meshBasicMaterial color="#d7e2ad" transparent opacity={0.9} /></mesh>)}
         </group>
@@ -104,24 +126,25 @@ export function TeaService({ kind, ritual, color = "#9b744b" }: { kind: TeawareK
           <mesh position={[-0.39, 0.05, 0]}><torusGeometry args={[0.22, 0.045, 8, 14, Math.PI]} /><meshStandardMaterial color={clay} /></mesh>
         </>}
       </group>
-      <group ref={fairness} position={[0.24, 0, 0.2]}>
+      <group ref={fairness} position={[0.18, 0, 0.24]}>
         <mesh position={[0, -0.015, 0]} scale={[0.72, 0.84, 0.72]}><cylinderGeometry args={[0.17, 0.11, 0.25, 14]} /><meshStandardMaterial color={liquidColor} transparent opacity={0.86} roughness={0.35} /></mesh>
         <mesh castShadow scale={[0.82, 1, 0.82]}><cylinderGeometry args={[0.19, 0.13, 0.3, 14]} /><meshStandardMaterial color="#eaf2ef" transparent opacity={0.28} roughness={0.12} metalness={0.08} depthWrite={false} /></mesh>
         <mesh castShadow position={[0.18, 0.05, 0]} rotation={[0, 0, -Math.PI / 2]}><coneGeometry args={[0.075, 0.26, 9]} /><meshStandardMaterial color="#eaf2ef" transparent opacity={0.32} roughness={0.12} metalness={0.08} depthWrite={false} /></mesh>
         <mesh position={[-0.17, 0.03, 0]}><torusGeometry args={[0.13, 0.025, 7, 12, Math.PI]} /><meshStandardMaterial color="#dfeae6" transparent opacity={0.48} roughness={0.12} metalness={0.08} /></mesh>
         <mesh position={[0, 0.16, 0]}><cylinderGeometry args={[0.13, 0.13, 0.014, 14]} /><meshStandardMaterial color={liquidColor} transparent opacity={0.82} /></mesh>
       </group>
-      <group position={[0.78, -0.09, 0.42]}>
-        <mesh castShadow><cylinderGeometry args={[0.17, 0.12, 0.2, 14]} /><meshStandardMaterial color="#f6f1e8" /></mesh>
+      <group position={[0.58, -0.09, 0.18]}>
+        <mesh castShadow><cylinderGeometry args={[0.17, 0.12, 0.2, 14]} /><meshStandardMaterial color="#eee8dd" /></mesh>
         <mesh position={[0, 0.11, 0]}><cylinderGeometry args={[0.115, 0.115, 0.018, 14]} /><meshStandardMaterial color={liquidColor} /></mesh>
+        <mesh position={[0, 0.115, 0]} rotation={[Math.PI / 2, 0, 0]}><torusGeometry args={[0.145, 0.014, 6, 14]} /><meshStandardMaterial color="#9b806b" roughness={0.8} /></mesh>
       </group>
-      <mesh ref={stream} visible={false} position={[0.12, 0.18, 0.12]} rotation={[0.35, 0, -0.38]}>
+      <mesh ref={stream} visible={false} position={[0.04, 0.18, 0.12]} rotation={[0.35, 0, -0.38]}>
         <cylinderGeometry args={[0.025, 0.018, 0.58, 7]} /><meshStandardMaterial color={liquidColor} transparent opacity={0.76} />
       </mesh>
-      <mesh ref={secondStream} visible={false} position={[0.67, 0.12, 0.3]} rotation={[0.35, 0, -0.42]}>
+      <mesh ref={secondStream} visible={false} position={[0.51, 0.12, 0.18]} rotation={[0.35, 0, -0.42]}>
         <cylinderGeometry args={[0.022, 0.016, 0.46, 7]} /><meshStandardMaterial color={liquidColor} transparent opacity={0.76} />
       </mesh>
-      {[0, 1, 2].map((index) => <mesh key={index} position={[0.55 + index * 0.05, 0.28 + index * 0.18, 0.42]} scale={0.8 - index * 0.16}>
+      {[0, 1, 2].map((index) => <mesh key={index} position={[0.58 + index * 0.05, 0.28 + index * 0.18, 0.18]} scale={0.8 - index * 0.16}>
         <sphereGeometry args={[0.055, 8, 8]} /><meshBasicMaterial color="#f7f4ec" transparent opacity={ritual === "serving" || ritual === "complete" ? 0.22 : 0} />
       </mesh>)}
     </group>
