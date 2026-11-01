@@ -218,6 +218,7 @@ export function ChagyeongApp() {
         <RabbitIcon size={17} />
         <div><small>오늘의 토끼</small><strong>{identity.displayName}</strong></div>
       </aside>
+      <div id="local-rabbit-name" className="rabbit-name is-local screen-rabbit-name"><span>잎</span>{identity.displayName}</div>
 
       {teaRoom.room.people.length > 1 && (
         <aside className="visitor-card" aria-label="함께 머무는 토끼">

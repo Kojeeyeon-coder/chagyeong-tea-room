@@ -1,6 +1,6 @@
 "use client";
 
-import { Html, OrbitControls, Sparkles } from "@react-three/drei";
+import { OrbitControls, Sparkles } from "@react-three/drei";
 import { Canvas, ThreeEvent, useFrame, useThree } from "@react-three/fiber";
 import { useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
@@ -137,14 +137,17 @@ function Player({ identity, local, pathRef, positionRef, groupRef, queuedSeatRef
   return <Rabbit groupRef={groupRef} local variant={identity.variant} name={identity.displayName} state={local.state} ritual={local.ritual} teaware={local.teaware} teaColor={teaColor} position={renderPosition} rotation={rotation} />;
 }
 
-function LocalNameTag({ target, name }: { target: React.RefObject<THREE.Group | null>; name: string }) {
-  const tag = useRef<THREE.Group>(null);
-  useFrame(() => {
-    if (!tag.current || !target.current) return;
-    tag.current.position.copy(target.current.position);
-    tag.current.position.y = 2.88;
+function LocalNameTag({ target }: { target: React.RefObject<THREE.Group | null> }) {
+  useFrame(({ camera }) => {
+    if (!target.current) return;
+    const marker = document.getElementById("local-rabbit-name");
+    if (!marker) return;
+    const point = target.current.position.clone().add(new THREE.Vector3(0, 2.72, 0)).project(camera);
+    marker.style.left = `${(point.x * 0.5 + 0.5) * 100}%`;
+    marker.style.top = `${(-point.y * 0.5 + 0.5) * 100}%`;
+    marker.style.opacity = point.z > -1 && point.z < 1 ? "1" : "0";
   });
-  return <group ref={tag}><Html center sprite distanceFactor={10} zIndexRange={[28, 16]} occlude={false}><div className="rabbit-name is-local"><span>잎</span>{name}</div></Html></group>;
+  return null;
 }
 
 function LowTable({ position }: { position: (typeof TABLE_POSITIONS)[number] }) {
@@ -382,7 +385,7 @@ function World(props: SceneProps) {
       </mesh>
       {SEAT_POSITIONS.map((seat) => <Seat key={seat.id} seat={seat} occupied={Boolean(props.room.occupiedSeats[seat.id])} onClick={() => requestSeat(seat.id)} />)}
       <Player identity={props.identity} local={props.local} pathRef={pathRef} positionRef={localPositionRef} groupRef={playerRef} queuedSeatRef={queuedSeatRef} onMove={props.onMove} onArriveSeat={(seatId) => void props.onClaimSeat(seatId).then((result) => props.onNotice(result.message))} />
-      <LocalNameTag target={playerRef} name={props.identity.displayName} />
+      <LocalNameTag target={playerRef} />
       {props.room.people.filter((person) => person.sessionId !== props.identity.sessionId).map((person) => (
         <Rabbit key={person.sessionId} variant={person.variant} name={person.displayName} state={person.state} ritual={person.ritual} teaware={person.teaware} teaColor={TEAS.find((tea) => tea.id === person.tea)?.color} position={person.position} rotation={person.rotation} />
       ))}
