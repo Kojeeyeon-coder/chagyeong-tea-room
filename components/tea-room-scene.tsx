@@ -57,7 +57,7 @@ function CameraRig({ target, focus, moving, seatId }: { target: React.RefObject<
       const activeSeat = seatId ? SEAT_POSITIONS.find((seat) => seat.id === seatId) : null;
       const cameraTarget = activeSeat?.kind === "solo" && focus
         ? desired.clone().add(forward.multiplyScalar(1.05)).add(new THREE.Vector3(0, 0, 2.4))
-        : desired.clone().add(forward.multiplyScalar(distance));
+        : desired.clone().add(forward.multiplyScalar(focus ? distance : -distance));
       cameraTarget.y += focus ? 2.55 : 5.15;
       camera.position.lerp(cameraTarget, 1 - Math.exp(-delta * (focus ? 3.2 : 2.2)));
       aligned.current = true;
@@ -360,7 +360,7 @@ function World(props: SceneProps) {
         return <group position={[table.x + offset.x, 0.58, table.z + offset.z]} rotation={[0, serviceRotation, 0]}><group position={[-0.05, 0, 0]}><TeaService kind={props.local.teaware} ritual={props.local.ritual} color={TEAS.find((tea) => tea.id === props.local.tea)?.color} /></group></group>;
       })()}
       <RemoteTeaServices people={props.room.people} localSessionId={props.identity.sessionId} />
-      <CameraRig target={playerRef} focus={props.local.state === "brewing" || props.local.state === "drinking"} moving={props.local.state === "walking"} seatId={props.local.seatId} />
+      <CameraRig target={playerRef} focus={Boolean(props.local.seatId)} moving={props.local.state === "walking"} seatId={props.local.seatId} />
     </>
   );
 }

@@ -5,11 +5,11 @@ import { useCallback, useEffect, useRef, useState } from "react";
 export function useAmbientSound() {
   const [enabled, setEnabled] = useState(false);
   const contextRef = useRef<AudioContext | null>(null);
-  const chimeTimer = useRef<number | null>(null);
+  const melodyTimer = useRef<number | null>(null);
 
   const stop = useCallback(() => {
-    if (chimeTimer.current !== null) window.clearInterval(chimeTimer.current);
-    chimeTimer.current = null;
+    if (melodyTimer.current !== null) window.clearInterval(melodyTimer.current);
+    melodyTimer.current = null;
     const context = contextRef.current;
     contextRef.current = null;
     if (context) void context.close();
@@ -22,8 +22,14 @@ export function useAmbientSound() {
     const context = new AudioContextClass();
     const master = context.createGain();
     master.gain.setValueAtTime(0.0001, context.currentTime);
-    master.gain.exponentialRampToValueAtTime(0.07, context.currentTime + 1.8);
+    master.gain.exponentialRampToValueAtTime(0.075, context.currentTime + 1.8);
     master.connect(context.destination);
+
+    const delay = context.createDelay(2);
+    const delayGain = context.createGain();
+    delay.delayTime.value = 0.38;
+    delayGain.gain.value = 0.18;
+    delay.connect(delayGain).connect(master);
 
     const noiseBuffer = context.createBuffer(1, context.sampleRate * 4, context.sampleRate);
     const noise = noiseBuffer.getChannelData(0);
@@ -35,35 +41,62 @@ export function useAmbientSound() {
     breeze.loop = true;
     filter.type = "lowpass";
     filter.frequency.value = 520;
-    breezeGain.gain.value = 0.34;
+    breezeGain.gain.value = 0.2;
     breeze.connect(filter).connect(breezeGain).connect(master);
     breeze.start();
 
-    [110, 164.81].forEach((frequency, index) => {
+    [73.42, 110].forEach((frequency, index) => {
       const tone = context.createOscillator();
       const gain = context.createGain();
       tone.type = "sine";
       tone.frequency.value = frequency;
-      gain.gain.value = index === 0 ? 0.11 : 0.055;
+      gain.gain.value = index === 0 ? 0.075 : 0.04;
       tone.connect(gain).connect(master);
       tone.start();
     });
 
-    const ringChime = () => {
+    const phrases: Array<Array<number | null>> = [
+      [293.66, 369.99, 440, null, 493.88, 440, 369.99, null],
+      [329.63, 369.99, 493.88, 440, null, 369.99, 329.63, null],
+      [293.66, 329.63, 369.99, null, 440, 493.88, 587.33, null],
+      [493.88, 440, 369.99, 329.63, 293.66, null, 220, null],
+    ];
+    let phraseIndex = 0;
+    const playPhrase = () => {
       if (context.state === "closed") return;
-      const now = context.currentTime;
-      const chime = context.createOscillator();
-      const chimeGain = context.createGain();
-      chime.type = "sine";
-      chime.frequency.value = Math.random() > 0.5 ? 659.25 : 783.99;
-      chimeGain.gain.setValueAtTime(0.0001, now);
-      chimeGain.gain.exponentialRampToValueAtTime(0.045, now + 0.08);
-      chimeGain.gain.exponentialRampToValueAtTime(0.0001, now + 3.8);
-      chime.connect(chimeGain).connect(master);
-      chime.start(now);
-      chime.stop(now + 4);
+      const phrase = phrases[phraseIndex % phrases.length];
+      phraseIndex += 1;
+      const phraseStart = context.currentTime + 0.08;
+      phrase.forEach((frequency, index) => {
+        if (!frequency) return;
+        const startAt = phraseStart + index * 0.64;
+        const note = context.createOscillator();
+        const overtone = context.createOscillator();
+        const noteGain = context.createGain();
+        const overtoneGain = context.createGain();
+        const warmth = context.createBiquadFilter();
+        note.type = "sine";
+        overtone.type = "triangle";
+        note.frequency.setValueAtTime(frequency, startAt);
+        overtone.frequency.setValueAtTime(frequency * 2, startAt);
+        overtoneGain.gain.value = 0.16;
+        warmth.type = "lowpass";
+        warmth.frequency.value = 1450;
+        noteGain.gain.setValueAtTime(0.0001, startAt);
+        noteGain.gain.exponentialRampToValueAtTime(0.16, startAt + 0.045);
+        noteGain.gain.exponentialRampToValueAtTime(0.0001, startAt + 1.8);
+        note.connect(noteGain);
+        overtone.connect(overtoneGain).connect(noteGain);
+        noteGain.connect(warmth).connect(master);
+        warmth.connect(delay);
+        note.start(startAt);
+        overtone.start(startAt);
+        note.stop(startAt + 1.9);
+        overtone.stop(startAt + 1.9);
+      });
     };
-    chimeTimer.current = window.setInterval(ringChime, 13_000);
+    playPhrase();
+    melodyTimer.current = window.setInterval(playPhrase, 5_500);
     contextRef.current = context;
     await context.resume();
     setEnabled(true);
