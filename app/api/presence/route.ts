@@ -5,7 +5,7 @@ import { getDatabase, getRoomSnapshot, getSessionRoom, json, seatKey, verifySess
 const presenceSchema = z.object({
   sessionId: z.string().uuid(),
   token: z.string().min(24).max(128),
-  position: z.object({ x: z.number().min(-11.5).max(11.5), z: z.number().min(-7.3).max(14.4) }),
+  position: z.object({ x: z.number().min(-13.4).max(13.4), z: z.number().min(-7.6).max(15) }),
   rotation: z.number().finite().min(-Math.PI * 4).max(Math.PI * 4),
   state: z.enum(RABBIT_STATES),
   seatId: z.string().regex(/^seat-(?:[1-9]|1[0-9]|20)$/).nullable(),

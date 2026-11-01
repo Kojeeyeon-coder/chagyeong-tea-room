@@ -1,26 +1,26 @@
 import type { Vec2 } from "./chagyeong-types";
 
 const CELL = 0.5;
-const BOUNDS = { minX: -11.3, maxX: 11.3, minZ: -7.1, maxZ: 14.2 };
+const BOUNDS = { minX: -13.2, maxX: 13.2, minZ: -7.4, maxZ: 14.8 };
 export type TablePosition = { x: number; z: number; kind: "shared" | "solo" };
 export type SeatPosition = { id: string; table: number; kind: "shared" | "solo"; x: number; z: number; rotation: number };
 
 export const TABLE_POSITIONS: readonly TablePosition[] = [
-  { x: -6.4, z: -3.4, kind: "shared" as const },
-  { x: 0, z: -3.4, kind: "shared" as const },
-  { x: 6.4, z: -3.4, kind: "shared" as const },
-  { x: 0, z: 3.8, kind: "shared" as const },
-  { x: -10.3, z: -4.5, kind: "solo" as const },
-  { x: -10.3, z: 1.2, kind: "solo" as const },
-  { x: 10.3, z: -4.5, kind: "solo" as const },
-  { x: 10.3, z: 1.2, kind: "solo" as const },
+  { x: -7.5, z: -1.4, kind: "shared" as const },
+  { x: 0, z: -1.4, kind: "shared" as const },
+  { x: 7.5, z: -1.4, kind: "shared" as const },
+  { x: 0, z: 4.4, kind: "shared" as const },
+  { x: -12.1, z: -3.7, kind: "solo" as const },
+  { x: -12.1, z: 2.4, kind: "solo" as const },
+  { x: 12.1, z: -3.7, kind: "solo" as const },
+  { x: 12.1, z: 2.4, kind: "solo" as const },
 ] as const;
 
 export const SEAT_POSITIONS: SeatPosition[] = TABLE_POSITIONS.flatMap<SeatPosition>((tablePosition, table): SeatPosition[] => {
   const { x, z, kind } = tablePosition;
   if (kind === "solo") {
     const leftWall = x < 0;
-    return [{ id: `seat-${17 + (table - 4)}`, table, kind, x: x + (leftWall ? 1.15 : -1.15), z, rotation: leftWall ? -Math.PI / 2 : Math.PI / 2 }];
+    return [{ id: `seat-${17 + (table - 4)}`, table, kind, x: x + (leftWall ? 1.25 : -1.25), z, rotation: leftWall ? -Math.PI / 2 : Math.PI / 2 }];
   }
   return [
     { id: `seat-${table * 4 + 1}`, table, kind, x, z: z - 1.7, rotation: 0 },
@@ -56,7 +56,7 @@ export function findPath(start: Vec2, target: Vec2): Vec2[] {
   const came = new Map<string, string>();
   const cost = new Map<string, number>([[key(sx, sz), 0]]);
   const nodes = new Map<string, { x: number; z: number }>([[key(sx, sz), { x: sx, z: sz }]]);
-  const directions = [[1, 0], [-1, 0], [0, 1], [0, -1]] as const;
+  const directions = [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [1, -1], [-1, 1], [-1, -1]] as const;
 
   while (open.length) {
     open.sort((a, b) => a.score - b.score);
@@ -76,7 +76,7 @@ export function findPath(start: Vec2, target: Vec2): Vec2[] {
       const world = { x: toWorld(nx), z: toWorld(nz) };
       if (!isWalkable(world)) continue;
       const nextKey = key(nx, nz);
-      const nextCost = (cost.get(key(current.x, current.z)) ?? 0) + 1;
+      const nextCost = (cost.get(key(current.x, current.z)) ?? 0) + (dx && dz ? Math.SQRT2 : 1);
       if (nextCost >= (cost.get(nextKey) ?? Infinity)) continue;
       cost.set(nextKey, nextCost);
       came.set(nextKey, key(current.x, current.z));

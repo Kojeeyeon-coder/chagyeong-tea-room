@@ -34,15 +34,15 @@ export function Rabbit({ variant, name, state, position, rotation, ritual = "idl
   const rightPaw = useRef<THREE.Mesh>(null);
   const cup = useRef<THREE.Group>(null);
   const colors = COLORS[variant];
-  const eyeColor = variant === "ink" ? "#eee8d6" : "#302b29";
+  const eyeColor = variant === "ink" ? "#9fd8ea" : "#302b29";
   const isDrinking = state === "drinking";
 
   useFrame(({ clock }, delta) => {
     const root = (groupRef?.current ?? internal.current);
     if (!root || !body.current) return;
-    root.position.x = THREE.MathUtils.damp(root.position.x, position.x, local ? 18 : 6, delta);
-    root.position.z = THREE.MathUtils.damp(root.position.z, position.z, local ? 18 : 6, delta);
-    root.rotation.y = THREE.MathUtils.damp(root.rotation.y, rotation, 9, delta);
+    root.position.x = THREE.MathUtils.damp(root.position.x, position.x, local ? 12 : 6, delta);
+    root.position.z = THREE.MathUtils.damp(root.position.z, position.z, local ? 12 : 6, delta);
+    root.rotation.y = THREE.MathUtils.damp(root.rotation.y, rotation, 6, delta);
     const t = clock.elapsedTime;
     const walking = state === "walking";
     const greeting = state === "greeting";
@@ -55,7 +55,7 @@ export function Rabbit({ variant, name, state, position, rotation, ritual = "idl
     const steeping = brewing && ritual === "brewing" && teaware !== "matchaSet";
     const serving = brewing && ritual === "serving";
     const resting = state === "sitting" || brewing || drinking;
-    body.current.position.y = walking ? Math.abs(Math.sin(t * 7)) * 0.09 : resting ? -0.12 : 0;
+    body.current.position.y = walking ? Math.abs(Math.sin(t * 6.2)) * 0.025 : resting ? -0.12 : 0;
     body.current.rotation.x = greeting ? Math.sin(t * 5) * 0.22 + 0.18 : requesting ? 0.1 + Math.sin(t * 3) * 0.04 : pouring ? 0.16 : 0;
     body.current.rotation.z = whisking ? Math.sin(t * 7) * 0.07 : pouring ? -0.11 : serving ? -0.05 : 0;
     if (leftEar.current && rightEar.current) {
@@ -63,7 +63,7 @@ export function Rabbit({ variant, name, state, position, rotation, ritual = "idl
       rightEar.current.rotation.z = 0.1 - Math.sin(t * 2.2) * 0.035;
     }
     if (leftPaw.current && rightPaw.current) {
-      const pawLift = drinking ? -1.2 : pouring ? -1.08 : requesting ? -0.72 : serving ? -1.02 : steeping ? -0.82 : preparing ? -0.55 : whisking ? -0.9 : greeting ? -0.55 : walking ? Math.sin(t * 7) * 0.35 : 0;
+      const pawLift = drinking ? -1.2 : pouring ? -1.08 : requesting ? -0.72 : serving ? -1.02 : steeping ? -0.82 : preparing ? -0.55 : whisking ? -0.9 : greeting ? -0.55 : walking ? Math.sin(t * 6.2) * 0.22 : 0;
       const ritualMotion = whisking ? Math.sin(t * 12) * 0.32 : steeping ? Math.sin(t * 2.5) * 0.08 : 0;
       leftPaw.current.rotation.x = pawLift + ritualMotion;
       rightPaw.current.rotation.x = pawLift - ritualMotion * 0.7;
@@ -75,15 +75,15 @@ export function Rabbit({ variant, name, state, position, rotation, ritual = "idl
       rightPaw.current.position.y = THREE.MathUtils.damp(rightPaw.current.position.y, drinking ? 0.94 : 0.72, 9, delta);
     }
     if (cup.current) {
-      cup.current.position.x = 0.21;
-      cup.current.position.y = 1.4 + Math.sin(t * 2.4) * 0.018;
-      cup.current.position.z = 0.55;
-      cup.current.rotation.x = drinking ? -0.58 + Math.sin(t * 2.4) * 0.035 : 0;
+      cup.current.position.x = 0.14;
+      cup.current.position.y = 1.29 + Math.sin(t * 2.4) * 0.012;
+      cup.current.position.z = 0.47;
+      cup.current.rotation.x = drinking ? -0.48 + Math.sin(t * 2.4) * 0.025 : 0;
     }
   });
 
   return (
-    <group ref={groupRef ?? internal} position={[position.x, 0, position.z]} rotation={[0, rotation, 0]}>
+    <group ref={groupRef ?? internal} position={[position.x, 0, position.z]} rotation={[0, rotation, 0]} scale={0.86}>
       <group ref={body}>
         <mesh castShadow position={[0, 0.65, 0]} scale={[0.72, 0.88, 0.62]}>
           <sphereGeometry args={[0.56, 16, 12]} /><meshStandardMaterial color={colors.fur} roughness={0.94} />
@@ -107,7 +107,7 @@ export function Rabbit({ variant, name, state, position, rotation, ritual = "idl
           <capsuleGeometry args={[0.1, 0.35, 4, 8]} /><meshStandardMaterial color={colors.fur} />
         </mesh>
         <mesh castShadow position={[0, 0.72, -0.54]}><sphereGeometry args={[0.19, 10, 8]} /><meshStandardMaterial color={colors.fur} /></mesh>
-        <group ref={cup} visible={isDrinking} position={[0, 1.31, 0.92]} scale={1.08}>
+        <group ref={cup} visible={isDrinking} position={[0, 1.25, 0.5]} scale={0.95}>
           {teaware === "matchaSet" ? <>
             <mesh castShadow><cylinderGeometry args={[0.28, 0.2, 0.22, 18]} /><meshStandardMaterial color="#eee8dc" roughness={0.88} /></mesh>
             <mesh position={[0, 0.12, 0]}><cylinderGeometry args={[0.22, 0.22, 0.018, 18]} /><meshStandardMaterial color="#91aa68" /></mesh>

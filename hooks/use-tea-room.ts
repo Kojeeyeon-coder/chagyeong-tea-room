@@ -79,7 +79,7 @@ export function useTeaRoom() {
       };
       setIdentity(nextIdentity);
       identityRef.current = nextIdentity;
-      const nextLocal: LocalPresence = { ...localRef.current, position: session.spawn };
+      const nextLocal: LocalPresence = { ...localRef.current, position: session.spawn, rotation: Math.PI };
       localRef.current = nextLocal;
       setLocalState(nextLocal);
       sessionStorage.setItem("chagyeong-rabbit", JSON.stringify(nextIdentity));
