@@ -118,7 +118,7 @@ export function Rabbit({ variant, name, state, position, rotation, ritual = "idl
           </>}
         </group>
       </group>
-      {!local && <Html center sprite position={[0, 2.62, 0]} distanceFactor={10} zIndexRange={[28, 16]} occlude={false}>
+      {!local && <Html center position={[0, 2.62, 0]} zIndexRange={[28, 16]} occlude={false}>
         <div className="rabbit-name">{name}</div>
       </Html>}
     </group>
