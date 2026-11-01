@@ -68,7 +68,7 @@ function CameraRig({ target, focus, moving, seatId }: { target: React.RefObject<
         : desired.clone().add(forward.multiplyScalar(focus ? distance : -distance));
       cameraTarget.x = THREE.MathUtils.clamp(cameraTarget.x, -11.4, 11.4);
       cameraTarget.z = THREE.MathUtils.clamp(cameraTarget.z, -6.15, 13.25);
-      cameraTarget.y += soloFocus ? 3.05 : focus ? 3.2 : 3.15;
+      cameraTarget.y += soloFocus ? 2.15 : focus ? 2.5 : 2.85;
       camera.position.lerp(cameraTarget, 1 - Math.exp(-delta * (focus ? 1.8 : 1.05)));
       aligned.current = true;
     }
