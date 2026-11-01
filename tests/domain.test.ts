@@ -46,6 +46,6 @@ test("시적인 이름은 현재 방의 이름과 중복되지 않는다", () =>
   assert.equal(POETIC_NAME_COUNT, 256);
   const first = choosePoeticName(new Set(), () => 0);
   const second = choosePoeticName(new Set([first]), () => 0);
-  assert.equal(first, "고요한 찻잎");
+  assert.equal(first, "다원");
   assert.notEqual(second, first);
 });
