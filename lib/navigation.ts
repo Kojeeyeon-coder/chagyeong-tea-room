@@ -30,7 +30,7 @@ function toWorld(v: number) { return v * CELL; }
 export function isWalkable(point: Vec2) {
   if (point.x < BOUNDS.minX || point.x > BOUNDS.maxX || point.z < BOUNDS.minZ || point.z > BOUNDS.maxZ) return false;
   const hitsTable = TABLE_POSITIONS.some((table) => Math.abs(point.x - table.x) < 1.45 && Math.abs(point.z - table.z) < 1.45);
-  const hitsPond = point.z > 8.2 && point.x > 1.7 && point.x < 7.8;
+  const hitsPond = Math.hypot(point.x - 4.9, point.z - 11.55) < 2.7;
   return !hitsTable && !hitsPond;
 }
 

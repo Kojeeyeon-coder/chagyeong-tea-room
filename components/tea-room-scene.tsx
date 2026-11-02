@@ -415,7 +415,7 @@ function TeaRoom({ mode }: { mode: TimeOfDay }) {
       <WindChime />
       <RoomDecor />
       {TABLE_POSITIONS.map((position, index) => <LowTable key={index} position={position} />)}
-      <mesh receiveShadow position={[4.8, 0.02, 10.4]}><cylinderGeometry args={[3.1, 3.5, 0.12, 24]} /><meshStandardMaterial color="#75918a" roughness={0.4} /></mesh>
+      <mesh receiveShadow position={[4.9, -0.005, 11.55]}><cylinderGeometry args={[2.25, 2.6, 0.08, 24]} /><meshStandardMaterial color="#75918a" roughness={0.4} /></mesh>
       {[[-6.8, 8.3], [-4.5, 10.8], [-1.8, 8.9], [0, 11.7]].map(([x, z], index) => (
         <mesh key={index} castShadow position={[x, 0.12, z]} scale={[1.2, 0.32, 0.85]}><dodecahedronGeometry args={[0.72, 0]} /><meshStandardMaterial color="#aaa99f" roughness={1} /></mesh>
       ))}
