@@ -35,7 +35,10 @@ export function TeaService({ kind, ritual, color = "#9b744b", socialPour = false
     const servingElapsed = serving ? t - stageStartedAt.current : 0;
     const firstPour = serving && kind !== "matchaSet" && servingElapsed < 1.45;
     const secondPour = serving && kind !== "matchaSet" && servingElapsed >= 1.45 && servingElapsed < 2.9;
-    const vesselY = kind === "matchaSet" ? 0 : firstPour ? 0.72 : brewing ? 0.54 : preparing ? 0.46 : 0.39;
+    // Each procedural vessel has a different lowest vertex. Rest its centre at
+    // the matching height instead of sharing one generic floating Y offset.
+    const vesselRestY = kind === "gaiwan" ? 0.15 : kind === "yixing" ? 0.305 : kind === "koreanTeapot" ? 0.325 : 0;
+    const vesselY = kind === "matchaSet" ? 0 : firstPour ? 0.68 : brewing ? vesselRestY + 0.12 : preparing ? vesselRestY + 0.06 : vesselRestY;
     vessel.current.position.y = THREE.MathUtils.damp(vessel.current.position.y, vesselY, 7, delta);
     vessel.current.position.x = THREE.MathUtils.damp(vessel.current.position.x, kind === "matchaSet" ? 0 : firstPour ? -0.12 : -0.42, 7, delta);
     vessel.current.rotation.z = THREE.MathUtils.damp(vessel.current.rotation.z, firstPour ? -0.66 : 0, 8, delta);

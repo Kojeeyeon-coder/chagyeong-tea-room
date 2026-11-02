@@ -56,7 +56,7 @@ export function Rabbit({ variant, name, state, position, rotation, ritual = "idl
     const serving = brewing && ritual === "serving";
     const resting = state === "sitting" || brewing || drinking;
     body.current.position.y = walking ? Math.abs(Math.sin(t * 6.2)) * 0.025 : resting ? -0.12 : 0;
-    body.current.rotation.x = greeting ? Math.sin(t * 5) * 0.22 + 0.18 : requesting ? 0.1 + Math.sin(t * 3) * 0.04 : pouring ? 0.16 : 0;
+    body.current.rotation.x = greeting ? Math.sin(t * 5) * 0.22 + 0.18 : requesting ? 0.1 + Math.sin(t * 3) * 0.04 : pouring ? 0.16 : drinking ? 0.045 : 0;
     body.current.rotation.z = whisking ? Math.sin(t * 7) * 0.07 : pouring ? -0.11 : serving ? -0.05 : 0;
     if (leftEar.current && rightEar.current) {
       leftEar.current.rotation.z = -0.1 + Math.sin(t * 2.2) * 0.035;
@@ -69,16 +69,17 @@ export function Rabbit({ variant, name, state, position, rotation, ritual = "idl
       rightPaw.current.rotation.x = pawLift - ritualMotion * 0.7;
       leftPaw.current.rotation.z = 0.18 + (serving ? 0.18 : 0);
       rightPaw.current.rotation.z = -0.18 - (serving ? 0.1 : 0);
-      leftPaw.current.position.x = THREE.MathUtils.damp(leftPaw.current.position.x, drinking ? -0.23 : -0.34, 9, delta);
-      rightPaw.current.position.x = THREE.MathUtils.damp(rightPaw.current.position.x, drinking ? 0.23 : 0.34, 9, delta);
-      leftPaw.current.position.y = THREE.MathUtils.damp(leftPaw.current.position.y, drinking ? 0.94 : 0.72, 9, delta);
-      rightPaw.current.position.y = THREE.MathUtils.damp(rightPaw.current.position.y, drinking ? 0.94 : 0.72, 9, delta);
+      const drinkingPawX = teaware === "matchaSet" ? 0.2 : 0.16;
+      leftPaw.current.position.x = THREE.MathUtils.damp(leftPaw.current.position.x, drinking ? -drinkingPawX : -0.34, 9, delta);
+      rightPaw.current.position.x = THREE.MathUtils.damp(rightPaw.current.position.x, drinking ? drinkingPawX : 0.34, 9, delta);
+      leftPaw.current.position.y = THREE.MathUtils.damp(leftPaw.current.position.y, drinking ? 0.84 : 0.72, 9, delta);
+      rightPaw.current.position.y = THREE.MathUtils.damp(rightPaw.current.position.y, drinking ? 0.84 : 0.72, 9, delta);
     }
     if (cup.current) {
-      cup.current.position.x = 0.14;
-      cup.current.position.y = 1.29 + Math.sin(t * 2.4) * 0.012;
-      cup.current.position.z = 0.47;
-      cup.current.rotation.x = drinking ? -0.48 + Math.sin(t * 2.4) * 0.025 : 0;
+      cup.current.position.x = 0.08;
+      cup.current.position.y = (teaware === "matchaSet" ? 1.06 : 1.1) + Math.sin(t * 2.4) * 0.008;
+      cup.current.position.z = teaware === "matchaSet" ? 0.45 : 0.47;
+      cup.current.rotation.x = drinking ? -0.36 + Math.sin(t * 2.4) * 0.02 : 0;
     }
   });
 
@@ -107,7 +108,7 @@ export function Rabbit({ variant, name, state, position, rotation, ritual = "idl
           <capsuleGeometry args={[0.1, 0.35, 4, 8]} /><meshStandardMaterial color={colors.fur} />
         </mesh>
         <mesh castShadow position={[0, 0.72, -0.54]}><sphereGeometry args={[0.19, 10, 8]} /><meshStandardMaterial color={colors.fur} /></mesh>
-        <group ref={cup} visible={isDrinking} position={[0, 1.25, 0.5]} scale={0.95}>
+        <group ref={cup} visible={isDrinking} position={[0.08, 1.1, 0.47]} scale={teaware === "matchaSet" ? 0.72 : 0.82}>
           {teaware === "matchaSet" ? <>
             <mesh castShadow><cylinderGeometry args={[0.28, 0.2, 0.22, 18]} /><meshStandardMaterial color="#eee8dc" roughness={0.88} /></mesh>
             <mesh position={[0, 0.12, 0]}><cylinderGeometry args={[0.22, 0.22, 0.018, 18]} /><meshStandardMaterial color={teaColor} /></mesh>
