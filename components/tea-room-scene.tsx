@@ -538,7 +538,9 @@ function RemoteTeaServices({ people, localSessionId, room }: { people: PresenceS
     const host = people.find((candidate) => candidate.sessionId === room.tableHosts[String(seat.table)]);
     const teaColor = TEAS.find((tea) => tea.id === (isHost ? person.tea : host?.tea))?.color;
     const filled = !isHost && (person.state === "drinking" || person.ritual === "complete" || host?.state === "pouring");
-    const surfaceY = seat.kind === "solo" ? 0.76 : 0.68;
+    const surfaceY = seat.kind === "solo"
+      ? (usesOwnService ? 0.685 : 0.775)
+      : (usesOwnService ? 0.585 : 0.675);
     return <group key={person.sessionId} position={[table.x + offset.x, surfaceY, table.z + offset.z]} rotation={[0, serviceRotation, 0]} scale={usesOwnService && seat.kind === "shared" ? 0.66 : 1}>{usesOwnService && person.teaware
       ? <TeaService kind={person.teaware} ritual={person.ritual} color={teaColor} socialPour={person.state === "pouring"} />
       : <GuestCup color={teaColor} filled={filled} />}</group>;
@@ -617,7 +619,9 @@ function World(props: SceneProps) {
         const host = scenePeople.find((person) => person.sessionId === props.room.tableHosts[String(seat.table)]);
         const teaColor = TEAS.find((tea) => tea.id === (isHost ? props.local.tea : host?.tea))?.color;
         const filled = !isHost && (props.local.state === "drinking" || props.local.ritual === "complete" || host?.state === "pouring");
-        const surfaceY = seat.kind === "solo" ? 0.76 : 0.68;
+        const surfaceY = seat.kind === "solo"
+          ? (usesOwnService ? 0.685 : 0.775)
+          : (usesOwnService ? 0.585 : 0.675);
         return <group position={[table.x + offset.x, surfaceY, table.z + offset.z]} rotation={[0, serviceRotation, 0]} scale={usesOwnService && seat.kind === "shared" ? 0.66 : 1}>{usesOwnService && props.local.teaware
           ? <TeaService kind={props.local.teaware} ritual={props.local.ritual} color={teaColor} socialPour={props.local.state === "pouring"} />
           : <GuestCup color={teaColor} filled={filled} />}</group>;

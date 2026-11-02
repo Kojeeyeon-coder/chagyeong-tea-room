@@ -35,10 +35,12 @@ export function TeaService({ kind, ritual, color = "#9b744b", socialPour = false
     const servingElapsed = serving ? t - stageStartedAt.current : 0;
     const firstPour = serving && kind !== "matchaSet" && servingElapsed < 1.45;
     const secondPour = serving && kind !== "matchaSet" && servingElapsed >= 1.45 && servingElapsed < 2.9;
-    vessel.current.position.y = THREE.MathUtils.damp(vessel.current.position.y, firstPour ? 0.42 : brewing ? 0.24 : preparing ? 0.16 : 0.1, 7, delta);
+    const vesselY = kind === "matchaSet" ? 0 : firstPour ? 0.72 : brewing ? 0.54 : preparing ? 0.46 : 0.39;
+    vessel.current.position.y = THREE.MathUtils.damp(vessel.current.position.y, vesselY, 7, delta);
     vessel.current.position.x = THREE.MathUtils.damp(vessel.current.position.x, kind === "matchaSet" ? 0 : firstPour ? -0.12 : -0.42, 7, delta);
     vessel.current.rotation.z = THREE.MathUtils.damp(vessel.current.rotation.z, firstPour ? -0.66 : 0, 8, delta);
-    root.current.position.y = 0.08 + ((preparing || brewing) ? Math.sin(t * 2.2) * 0.018 : 0);
+    const rootRestY = kind === "matchaSet" ? 0.122 : 0;
+    root.current.position.y = rootRestY + ((preparing || brewing) ? Math.sin(t * 2.2) * 0.012 : 0);
     if (whisk.current) {
       whisk.current.visible = preparing || brewing;
       const whiskCycle = (t * 4.8) % 1;
@@ -77,7 +79,7 @@ export function TeaService({ kind, ritual, color = "#9b744b", socialPour = false
     }
     if (fairness.current) {
       fairness.current.position.x = THREE.MathUtils.damp(fairness.current.position.x, secondPour ? 0.42 : 0.22, 7, delta);
-      fairness.current.position.y = THREE.MathUtils.damp(fairness.current.position.y, secondPour ? 0.32 : 0, 7, delta);
+      fairness.current.position.y = THREE.MathUtils.damp(fairness.current.position.y, secondPour ? 0.55 : 0.152, 7, delta);
       fairness.current.rotation.z = THREE.MathUtils.damp(fairness.current.rotation.z, secondPour ? -0.7 : 0, 8, delta);
     }
     if (secondStream.current) {
@@ -87,7 +89,7 @@ export function TeaService({ kind, ritual, color = "#9b744b", socialPour = false
   });
 
   if (kind === "matchaSet") return (
-    <group ref={root} position={[0, 0.08, 0]} scale={0.76} visible={ritual !== "sipping"}>
+    <group ref={root} position={[0, 0.122, 0]} scale={0.76} visible={ritual !== "sipping"}>
       <group ref={vessel}>
         <mesh castShadow><cylinderGeometry args={[0.43, 0.3, 0.32, 20]} /><meshStandardMaterial color="#eee8dc" roughness={0.9} /></mesh>
         <mesh position={[0, 0.17, 0]}><cylinderGeometry args={[0.34, 0.34, 0.025, 20]} /><meshStandardMaterial color={liquidColor} roughness={0.55} /></mesh>
@@ -112,7 +114,7 @@ export function TeaService({ kind, ritual, color = "#9b744b", socialPour = false
   const isGaiwan = kind === "gaiwan";
   const isYixing = kind === "yixing";
   return (
-    <group ref={root} position={[0, 0.08, 0]} scale={0.56}>
+    <group ref={root} position={[0, 0, 0]} scale={0.56}>
       <group ref={vessel}>
         {isGaiwan ? <>
           <mesh castShadow><cylinderGeometry args={[0.38, 0.26, 0.3, 18]} /><meshStandardMaterial color={clay} roughness={0.82} /></mesh>
@@ -133,7 +135,7 @@ export function TeaService({ kind, ritual, color = "#9b744b", socialPour = false
           <mesh position={[-0.39, 0.05, 0]}><torusGeometry args={[0.22, 0.045, 8, 14, Math.PI]} /><meshStandardMaterial color={clay} /></mesh>
         </>}
       </group>
-      <group ref={fairness} position={[0.18, 0, -0.46]} renderOrder={3}>
+      <group ref={fairness} position={[0.18, 0.152, -0.46]} renderOrder={3}>
         <mesh position={[0, -0.012, 0]} scale={[0.78, 0.9, 0.78]} renderOrder={4}><cylinderGeometry args={[0.19, 0.12, 0.28, 14]} /><meshStandardMaterial color={liquidColor} roughness={0.3} /></mesh>
         <mesh castShadow scale={[1, 1.14, 1]} renderOrder={5}><cylinderGeometry args={[0.21, 0.14, 0.34, 14]} /><meshStandardMaterial color="#d6e5e1" transparent opacity={0.82} roughness={0.14} metalness={0.03} depthWrite /></mesh>
         <mesh castShadow position={[0.2, 0.07, 0]} rotation={[0, 0, -Math.PI / 2]} renderOrder={5}><coneGeometry args={[0.08, 0.27, 9]} /><meshStandardMaterial color="#eaf2ef" transparent opacity={0.86} roughness={0.1} metalness={0.08} depthWrite /></mesh>
@@ -141,7 +143,7 @@ export function TeaService({ kind, ritual, color = "#9b744b", socialPour = false
         <mesh position={[0, 0.18, 0]}><cylinderGeometry args={[0.145, 0.145, 0.016, 14]} /><meshStandardMaterial color={liquidColor} transparent opacity={0.9} /></mesh>
         <mesh position={[0, 0.188, 0]} rotation={[Math.PI / 2, 0, 0]}><torusGeometry args={[0.17, 0.016, 7, 14]} /><meshStandardMaterial color="#f0f7f4" transparent opacity={0.95} roughness={0.14} /></mesh>
       </group>
-      <group position={[0.62, -0.09, -0.12]} visible={ritual !== "sipping"}>
+      <group position={[0.62, 0.1, -0.12]} visible={ritual !== "sipping"}>
         <mesh castShadow><cylinderGeometry args={[0.17, 0.12, 0.2, 14]} /><meshStandardMaterial color="#eee8dd" /></mesh>
         <mesh position={[0, 0.11, 0]}><cylinderGeometry args={[0.115, 0.115, 0.018, 14]} /><meshStandardMaterial color={liquidColor} /></mesh>
         <mesh position={[0, 0.115, 0]} rotation={[Math.PI / 2, 0, 0]}><torusGeometry args={[0.145, 0.014, 6, 14]} /><meshStandardMaterial color="#9b806b" roughness={0.8} /></mesh>
