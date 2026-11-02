@@ -15,7 +15,11 @@ export function TeaService({ kind, ritual, color = "#9b744b", socialPour = false
   const secondStream = useRef<THREE.Mesh>(null);
   const previousRitual = useRef(ritual);
   const stageStartedAt = useRef(0);
-  const liquidColor = kind === "matchaSet" ? "#91aa68" : color;
+  // 다완은 말차 전용으로 색을 고정하지 않는다. 사용자가 고른 차의 수색을
+  // 그대로 따르고, 거품만 백자빛을 섞어 같은 계열의 밝은 색으로 만든다.
+  const liquidColor = color;
+  const foamColor = new THREE.Color(liquidColor).lerp(new THREE.Color("#f3edcf"), 0.48).getStyle();
+  const foamTrailColor = new THREE.Color(liquidColor).lerp(new THREE.Color("#f7f2dc"), 0.66).getStyle();
 
   useFrame(({ clock }, delta) => {
     if (!root.current || !vessel.current) return;
@@ -87,12 +91,12 @@ export function TeaService({ kind, ritual, color = "#9b744b", socialPour = false
       <group ref={vessel}>
         <mesh castShadow><cylinderGeometry args={[0.43, 0.3, 0.32, 20]} /><meshStandardMaterial color="#eee8dc" roughness={0.9} /></mesh>
         <mesh position={[0, 0.17, 0]}><cylinderGeometry args={[0.34, 0.34, 0.025, 20]} /><meshStandardMaterial color={liquidColor} roughness={0.55} /></mesh>
-        <mesh position={[0, 0.19, 0]} rotation={[-Math.PI / 2, 0, 0]}><ringGeometry args={[0.08, 0.3, 20]} /><meshBasicMaterial color="#b8c98a" transparent opacity={ritual === "brewing" ? 0.9 : 0.35} /></mesh>
+        <mesh position={[0, 0.19, 0]} rotation={[-Math.PI / 2, 0, 0]}><ringGeometry args={[0.08, 0.3, 20]} /><meshBasicMaterial color={foamColor} transparent opacity={ritual === "brewing" ? 0.9 : 0.35} /></mesh>
         {[[-0.09, -0.55], [0.09, 0.55]].map(([x, turn], index) => <mesh key={`v-trail-${index}`} position={[x, 0.207, 0.035]} rotation={[0, turn, Math.PI / 2]}>
-          <cylinderGeometry args={[0.009, 0.016, 0.24, 5]} /><meshBasicMaterial color="#d8e3ad" transparent opacity={ritual === "brewing" ? 0.62 : 0} />
+          <cylinderGeometry args={[0.009, 0.016, 0.24, 5]} /><meshBasicMaterial color={foamTrailColor} transparent opacity={ritual === "brewing" ? 0.62 : 0} />
         </mesh>)}
         <group ref={foam} position={[0, 0.205, 0]} visible={false}>
-          {[[0.18, 0], [0.08, 0.15], [-0.13, 0.11], [-0.17, -0.08], [0.08, -0.16]].map(([x, z], index) => <mesh key={index} position={[x, 0, z]}><sphereGeometry args={[0.022 + index * 0.002, 7, 5]} /><meshBasicMaterial color="#d7e2ad" transparent opacity={0.9} /></mesh>)}
+          {[[0.18, 0], [0.08, 0.15], [-0.13, 0.11], [-0.17, -0.08], [0.08, -0.16]].map(([x, z], index) => <mesh key={index} position={[x, 0, z]}><sphereGeometry args={[0.022 + index * 0.002, 7, 5]} /><meshBasicMaterial color={foamTrailColor} transparent opacity={0.9} /></mesh>)}
         </group>
       </group>
       <group ref={whisk} position={[0, 0.47, 0]} rotation={[0, 0, 0.14]}>
