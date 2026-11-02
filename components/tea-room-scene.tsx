@@ -76,7 +76,7 @@ function GardenWeather({ weather }: { weather: TeaRoomWeather }) {
   </points>;
 }
 
-function CameraRig({ target, focus, seatId, allowFocusRotate }: { target: React.RefObject<THREE.Group | null>; focus: boolean; seatId: string | null; allowFocusRotate: boolean }) {
+function CameraRig({ target, focus, seatId }: { target: React.RefObject<THREE.Group | null>; focus: boolean; seatId: string | null }) {
   const controls = useRef<any>(null);
   const aligned = useRef(false);
   const previousTarget = useRef(new THREE.Vector3(Number.NaN, 0, 0));
@@ -87,9 +87,11 @@ function CameraRig({ target, focus, seatId, allowFocusRotate }: { target: React.
   useEffect(() => { aligned.current = false; }, [focus, seatId]);
   useFrame(({ camera }, delta) => {
     if (!controls.current || !target.current) return;
-    const actuallyMoving = Number.isFinite(previousTarget.current.x) && previousTarget.current.distanceTo(target.current.position) > 0.002;
+    // 착석 뒤 남는 미세한 위치 보간을 실제 이동으로 오인하면 OrbitControls가
+    // 매 프레임 회전을 다시 잠근다. 착석 구도에서는 이동 판정을 무시한다.
+    const actuallyMoving = !focus && Number.isFinite(previousTarget.current.x) && previousTarget.current.distanceTo(target.current.position) > 0.002;
     previousTarget.current.copy(target.current.position);
-    controls.current.enableRotate = (!focus || allowFocusRotate) && !actuallyMoving;
+    controls.current.enableRotate = focus || !actuallyMoving;
     if (camera instanceof THREE.PerspectiveCamera) {
       camera.fov = THREE.MathUtils.damp(camera.fov, focus ? (isMobile ? 60 : 52) : (isMobile ? 62 : 58), 3, delta);
       camera.updateProjectionMatrix();
@@ -119,7 +121,7 @@ function CameraRig({ target, focus, seatId, allowFocusRotate }: { target: React.
     controls.current.update();
     camera.position.y = THREE.MathUtils.clamp(camera.position.y, 1.65, 5.15);
   });
-  return <OrbitControls ref={controls} makeDefault enableDamping dampingFactor={0.055} enablePan={false} enableZoom enableRotate={!focus || allowFocusRotate} minDistance={focus ? 3.6 : 5.8} maxDistance={focus ? (isMobile ? 34 : 26) : (isMobile ? 40 : 34)} minPolarAngle={1.2} maxPolarAngle={1.44} rotateSpeed={focus ? 0.11 : 0.16} zoomSpeed={0.95} />;
+  return <OrbitControls ref={controls} makeDefault enableDamping dampingFactor={0.055} enablePan={false} enableZoom enableRotate minDistance={focus ? 3.6 : 5.8} maxDistance={focus ? (isMobile ? 34 : 26) : (isMobile ? 40 : 34)} minPolarAngle={1.2} maxPolarAngle={1.44} rotateSpeed={focus ? 0.11 : 0.16} zoomSpeed={0.95} />;
 }
 
 function Player({ identity, local, pathRef, positionRef, groupRef, queuedSeatRef, onMove, onArriveSeat }: {
@@ -528,7 +530,9 @@ function RemoteTeaServices({ people, localSessionId, room }: { people: PresenceS
     if (!seat) return null;
     const table = TABLE_POSITIONS[seat.table];
     const isHost = seat.kind === "solo" || room.tableHosts[String(seat.table)] === person.sessionId;
-    const usesOwnService = isHost || Boolean(person.teaware && person.ritual !== "idle");
+    // 다구를 고른 순간부터 개인 세트를 유지한다. idle 전환이나 호스트 스냅샷 지연 때문에
+    // 숙우만 잠깐 사라지는 상태를 만들지 않는다.
+    const usesOwnService = isHost || Boolean(person.teaware);
     const offset = usesOwnService ? teaServiceOffset(seat.id, seat.kind) : teaCupOffset(seat.id);
     const serviceRotation = seat.rotation;
     const host = people.find((candidate) => candidate.sessionId === room.tableHosts[String(seat.table)]);
@@ -607,7 +611,7 @@ function World(props: SceneProps) {
         if (!seat) return null;
         const table = TABLE_POSITIONS[seat.table];
         const isHost = seat.kind === "solo" || props.room.tableHosts[String(seat.table)] === props.identity.sessionId;
-        const usesOwnService = isHost || Boolean(props.local.teaware && props.local.ritual !== "idle");
+        const usesOwnService = isHost || Boolean(props.local.teaware);
         const offset = usesOwnService ? teaServiceOffset(seat.id, seat.kind) : teaCupOffset(seat.id);
         const serviceRotation = seat.rotation;
         const host = scenePeople.find((person) => person.sessionId === props.room.tableHosts[String(seat.table)]);
@@ -620,7 +624,7 @@ function World(props: SceneProps) {
       })()}
       <RemoteTeaServices people={scenePeople} localSessionId={props.identity.sessionId} room={props.room} />
       <SharedPourActions people={scenePeople} room={props.room} />
-      <CameraRig target={playerRef} focus={Boolean(props.local.seatId)} seatId={props.local.seatId} allowFocusRotate={props.local.state === "drinking"} />
+      <CameraRig target={playerRef} focus={Boolean(props.local.seatId)} seatId={props.local.seatId} />
     </>
   );
 }

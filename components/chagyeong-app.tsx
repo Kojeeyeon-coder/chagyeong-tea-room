@@ -140,15 +140,23 @@ export function ChagyeongApp() {
   }) : [];
   const isSharedGuest = currentSeat?.kind === "shared" && teaRoom.room.tableHosts[String(currentSeat.table)] !== teaRoom.identity?.sessionId;
   const sharedPourReady = isSharedGuest && tablemates.some((person) => person.state === "pouring");
+  const hasTeaRequest = tablemates.some((person) => person.state === "requesting");
+  const hostCanPour = !isSharedGuest && hasTeaRequest && tablemates.length > 0 && (
+    (teaRoom.local.ritual === "serving" && pourReady) || teaRoom.local.ritual === "complete"
+  );
   const socialAction = (state: "requesting" | "pouring") => {
     if (!currentSeat || currentSeat.kind !== "shared" || !tablemates.length) {
       showNotice("같은 찻상에 다른 토끼가 앉으면 할 수 있어요");
       return;
     }
+    if (state === "pouring" && !hostCanPour) {
+      showNotice(hasTeaRequest ? "차가 다 우러날 때까지 잠시 기다려 주세요" : "차를 요청한 토끼가 있으면 따라 줄 수 있어요");
+      return;
+    }
     if (socialTimer.current) window.clearTimeout(socialTimer.current);
     teaRoom.updateLocal({ state, actionStartedAt: Date.now() }, true);
     showNotice(state === "requesting" ? "찻잔을 살며시 내밀었어요" : "숙우에서 잔으로 차를 나누어요");
-    socialTimer.current = window.setTimeout(() => teaRoom.updateLocal({ state: "sitting", actionStartedAt: Date.now() }, true), state === "requesting" ? 8_000 : 6_000);
+    socialTimer.current = window.setTimeout(() => teaRoom.updateLocal({ state: "sitting", actionStartedAt: Date.now() }, true), state === "requesting" ? 15_000 : 6_000);
   };
 
   const captureScene = () => {
@@ -202,7 +210,7 @@ export function ChagyeongApp() {
     };
     const isMatcha = teaRoom.local.teaware === "matchaSet" || selectedTea.id === "matcha";
     setStage("preparing", isMatcha ? "다완과 차선을 가지런히 준비해요" : RITUAL_COPY.preparing);
-    ritualTimers.current.push(window.setTimeout(() => setStage("brewing", isMatcha ? "연두빛 거품이 오르도록 차선을 빠르게 움직여요" : RITUAL_COPY.brewing), 1_700));
+    ritualTimers.current.push(window.setTimeout(() => setStage("brewing", isMatcha ? "고운 거품이 오르도록 차선을 빠르게 움직여요" : RITUAL_COPY.brewing), 1_700));
     ritualTimers.current.push(window.setTimeout(() => {
       setStage("serving", isMatcha ? "말차가 고르게 풀렸어요. 다완을 들어 보세요" : "다관에서 숙우를 거쳐 찻잔에 담고 있어요");
       if (isMatcha) {
@@ -333,7 +341,7 @@ export function ChagyeongApp() {
           <span>{tablemates.length ? `${tablemates.length + 1}마리가 함께 머무는 중` : "누군가 오기를 기다리는 중"}</span>
           <div className="shared-action-buttons">
             <button onClick={() => socialAction("requesting")} disabled={!isSharedGuest || !tablemates.length || teaRoom.local.state === "brewing"}>차 요청하기</button>
-            <button onClick={() => socialAction("pouring")} disabled={Boolean(isSharedGuest) || !tablemates.length || teaRoom.local.state === "brewing"}>차 따라주기</button>
+            <button onClick={() => socialAction("pouring")} disabled={!hostCanPour}>차 따라주기</button>
           </div>
         </aside>
       )}
