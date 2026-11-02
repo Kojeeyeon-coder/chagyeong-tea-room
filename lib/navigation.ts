@@ -1,7 +1,7 @@
 import type { Vec2 } from "./chagyeong-types";
 
 const CELL = 0.5;
-const BOUNDS = { minX: -13.2, maxX: 13.2, minZ: -7.4, maxZ: 14.8 };
+const BOUNDS = { minX: -13.2, maxX: 13.2, minZ: -7.4, maxZ: 19.2 };
 export type TablePosition = { x: number; z: number; kind: "shared" | "solo" };
 export type SeatPosition = { id: string; table: number; kind: "shared" | "solo"; x: number; z: number; rotation: number };
 
@@ -30,7 +30,7 @@ function toWorld(v: number) { return v * CELL; }
 export function isWalkable(point: Vec2) {
   if (point.x < BOUNDS.minX || point.x > BOUNDS.maxX || point.z < BOUNDS.minZ || point.z > BOUNDS.maxZ) return false;
   const hitsTable = TABLE_POSITIONS.some((table) => Math.abs(point.x - table.x) < 1.45 && Math.abs(point.z - table.z) < 1.45);
-  const hitsPond = Math.hypot(point.x - 4.9, point.z - 11.55) < 2.7;
+  const hitsPond = Math.hypot(point.x - 4.8, point.z - 14) < 3.55;
   return !hitsTable && !hitsPond;
 }
 

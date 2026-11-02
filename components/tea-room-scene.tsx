@@ -53,7 +53,7 @@ function GardenWeather({ weather }: { weather: TeaRoomWeather }) {
     for (let index = 0; index < count; index += 1) {
       values[index * 3] = (Math.random() - 0.5) * 26;
       values[index * 3 + 1] = Math.random() * 6.2;
-      values[index * 3 + 2] = 8.9 + Math.random() * 5.7;
+      values[index * 3 + 2] = 9.35 + Math.random() * 8.35;
     }
     return values;
   }, [count]);
@@ -112,9 +112,9 @@ function CameraRig({ target, focus, seatId }: { target: React.RefObject<THREE.Gr
         cameraTarget = desired.clone().add(new THREE.Vector3(0, isMobile ? 3.55 : 3.25, isMobile ? 12.2 : 9.8));
       }
       cameraTarget.x = THREE.MathUtils.clamp(cameraTarget.x, -10.7, 10.7);
-      cameraTarget.z = THREE.MathUtils.clamp(cameraTarget.z, -5.65, 11.9);
+      cameraTarget.z = THREE.MathUtils.clamp(cameraTarget.z, -5.65, 17.2);
       camera.position.lerp(cameraTarget, 1 - Math.exp(-delta * (focus ? 2.35 : 1.15)));
-      aligned.current = true;
+      aligned.current = focus ? camera.position.distanceTo(cameraTarget) < 0.035 : true;
     }
     controls.current.update();
     camera.position.y = THREE.MathUtils.clamp(camera.position.y, 1.65, 5.15);
@@ -373,19 +373,19 @@ function RoomDecor() {
       <HanjiLantern position={[12, 0, -5.7]} floor />
       <group position={[-8.1, 0, 5.6]}><mesh castShadow position={[0, 0.25, 0]}><cylinderGeometry args={[0.34, 0.25, 0.5, 12]} /><meshStandardMaterial color="#b9a58d" /></mesh><LowPolyPine position={[0, 0.42, 0]} scale={0.7} /></group>
       <Hearth />
-      <group position={[1.7, 0, 9.5]}>
+      <group position={[1.7, 0, 12]}>
         <mesh castShadow position={[0, 0.55, 0]}><cylinderGeometry args={[0.42, 0.58, 0.85, 8]} /><meshStandardMaterial color="#9b998f" /></mesh>
         <mesh castShadow position={[0, 1.18, 0]}><boxGeometry args={[0.72, 0.12, 0.72]} /><meshStandardMaterial color="#aaa79d" /></mesh>
         <mesh castShadow position={[0, 1.58, 0]}><boxGeometry args={[0.32, 0.68, 0.32]} /><meshStandardMaterial color="#9b998f" /></mesh>
         <mesh castShadow position={[0, 1.95, 0]}><cylinderGeometry args={[0.34, 0.48, 0.22, 6]} /><meshStandardMaterial color="#aaa79d" /></mesh>
       </group>
-      <group position={[0, 0, 13.25]}>
+      <group position={[0, 0, 18.2]}>
         <mesh castShadow receiveShadow position={[0, 0.33, 0]}><boxGeometry args={[19, 0.65, 0.24]} /><meshStandardMaterial color="#e7e3d6" roughness={0.96} /></mesh>
         <mesh castShadow position={[0, 0.74, -0.02]}><boxGeometry args={[19, 0.14, 0.3]} /><meshStandardMaterial color="#8d6c50" /></mesh>
         {[-8.4, -6, -3.6, -1.2, 1.2, 3.6, 6, 8.4].map((x) => <mesh key={`garden-post-${x}`} castShadow position={[x, 0.65, -0.06]}><boxGeometry args={[0.13, 0.82, 0.3]} /><meshStandardMaterial color="#927258" /></mesh>)}
         {[-7.2, -4.8, -2.4, 0, 2.4, 4.8, 7.2].map((x, index) => <mesh key={`garden-screen-${x}`} position={[x, 0.58, 0.02]}><boxGeometry args={[2.08, 0.34, 0.06]} /><meshStandardMaterial color={index % 2 ? "#b9c8af" : "#c8d2bd"} roughness={1} /></mesh>)}
       </group>
-      {[[-7.7, 12.35], [-5.4, 12.15], [5.8, 12.2], [8, 12.45]].map(([x, z], index) => <group key={`shrub-${index}`} position={[x, 0, z]}>
+      {[[-7.7, 17.35], [-5.4, 17.15], [5.8, 17.2], [8, 17.45]].map(([x, z], index) => <group key={`shrub-${index}`} position={[x, 0, z]}>
         <mesh castShadow position={[0, 0.32, 0]}><cylinderGeometry args={[0.38, 0.28, 0.55, 10]} /><meshStandardMaterial color="#ad9980" /></mesh>
         <mesh castShadow position={[0, 0.92, 0]} scale={[1.15, 1, 0.85]}><dodecahedronGeometry args={[0.58, 0]} /><meshStandardMaterial color={index % 2 ? "#758b70" : "#84977b"} roughness={1} /></mesh>
       </group>)}
@@ -399,7 +399,7 @@ function TeaRoom({ mode }: { mode: TimeOfDay }) {
     <group>
       <mesh receiveShadow position={[0, -0.08, -0.15]}><boxGeometry args={[28, 0.18, 14.2]} /><meshStandardMaterial color="#bd9672" roughness={0.9} /></mesh>
       {[-6.8, -5.6, -4.4, -3.2, -2, -0.8, 0.4, 1.6, 2.8, 4, 5.2, 6.4].map((z) => <mesh key={`floor-plank-${z}`} position={[0, 0.016, z]}><boxGeometry args={[27.7, 0.012, 0.025]} /><meshStandardMaterial color="#806047" roughness={1} /></mesh>)}
-      <mesh receiveShadow position={[0, -0.06, 11.75]}><boxGeometry args={[28, 0.14, 5.5]} /><meshStandardMaterial color="#cbd5c1" roughness={1} /></mesh>
+      <mesh receiveShadow position={[0, -0.06, 14]}><boxGeometry args={[28, 0.14, 10]} /><meshStandardMaterial color="#cbd5c1" roughness={1} /></mesh>
       <mesh position={[0, 2.75, -7.45]}><planeGeometry args={[28, 6.1]} /><meshBasicMaterial color="#d8d2c2" /></mesh>
       <mesh castShadow receiveShadow position={[0, 0.22, -7.18]}><boxGeometry args={[28, 0.55, 0.22]} /><meshStandardMaterial color="#f2eee4" /></mesh>
       <mesh castShadow receiveShadow position={[0, 3.5, -7.18]}><boxGeometry args={[28, 0.6, 0.22]} /><meshStandardMaterial color="#f2eee4" /></mesh>
@@ -415,11 +415,11 @@ function TeaRoom({ mode }: { mode: TimeOfDay }) {
       <WindChime />
       <RoomDecor />
       {TABLE_POSITIONS.map((position, index) => <LowTable key={index} position={position} />)}
-      <mesh receiveShadow position={[4.9, -0.005, 11.55]}><cylinderGeometry args={[2.25, 2.6, 0.08, 24]} /><meshStandardMaterial color="#75918a" roughness={0.4} /></mesh>
-      {[[-6.8, 8.3], [-4.5, 10.8], [-1.8, 8.9], [0, 11.7]].map(([x, z], index) => (
+      <mesh receiveShadow position={[4.8, -0.005, 14]}><cylinderGeometry args={[3.05, 3.45, 0.08, 24]} /><meshStandardMaterial color="#75918a" roughness={0.4} /></mesh>
+      {[[-6.8, 10.75], [-4.5, 14.15], [-1.8, 11.25], [-0.2, 16.25]].map(([x, z], index) => (
         <mesh key={index} castShadow position={[x, 0.12, z]} scale={[1.2, 0.32, 0.85]}><dodecahedronGeometry args={[0.72, 0]} /><meshStandardMaterial color="#aaa99f" roughness={1} /></mesh>
       ))}
-      {[[-7.8, 9.8, 0.9], [-7, 12, 1.15], [8.2, 8.7, 0.95]].map(([x, z, pineScale], index) => <LowPolyPine key={`pine-${index}`} position={[x, 0, z]} scale={pineScale} />)}
+      {[[-7.8, 11.15, 0.9], [-7, 15.25, 1.15], [8.4, 10.95, 0.95]].map(([x, z, pineScale], index) => <LowPolyPine key={`pine-${index}`} position={[x, 0, z]} scale={pineScale} />)}
       {candlePositions.map(([x, z], index) => (
         <group key={index} position={[x, 0.3, z]}>
           <mesh castShadow><cylinderGeometry args={[0.08, 0.1, 0.5, 10]} /><meshStandardMaterial color="#eee4cf" /></mesh>
@@ -591,8 +591,8 @@ function World(props: SceneProps) {
       <Lighting mode={props.timeOfDay} />
       <TeaRoom mode={props.timeOfDay} />
       <GardenWeather weather={props.weather} />
-      <mesh position={[0, 0.01, 3.7]} rotation={[-Math.PI / 2, 0, 0]} onPointerUp={handleFloor}>
-        <planeGeometry args={[28, 24]} /><meshBasicMaterial transparent opacity={0} depthWrite={false} />
+      <mesh position={[0, 0.01, 5.8]} rotation={[-Math.PI / 2, 0, 0]} onPointerUp={handleFloor}>
+        <planeGeometry args={[28, 30]} /><meshBasicMaterial transparent opacity={0} depthWrite={false} />
       </mesh>
       {SEAT_POSITIONS.map((seat) => <Seat key={seat.id} seat={seat} occupied={Boolean(props.room.occupiedSeats[seat.id])} onClick={() => requestSeat(seat.id)} />)}
       <Player identity={props.identity} local={props.local} pathRef={pathRef} positionRef={localPositionRef} groupRef={playerRef} queuedSeatRef={queuedSeatRef} onMove={props.onMove} onArriveSeat={(seatId) => void props.onClaimSeat(seatId).then((result) => props.onNotice(result.message))} />

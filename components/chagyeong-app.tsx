@@ -331,9 +331,10 @@ export function ChagyeongApp() {
       {currentSeat?.kind === "shared" && (
         <aside className="shared-actions" aria-label="합석 행동">
           <span>{tablemates.length ? `${tablemates.length + 1}마리가 함께 머무는 중` : "누군가 오기를 기다리는 중"}</span>
-          {isSharedGuest
-            ? <button onClick={() => socialAction("requesting")} disabled={!tablemates.length || teaRoom.local.state === "brewing"}>차 요청하기</button>
-            : <button onClick={() => socialAction("pouring")} disabled={!tablemates.length || teaRoom.local.state === "brewing"}>차 따라주기</button>}
+          <div className="shared-action-buttons">
+            <button onClick={() => socialAction("requesting")} disabled={!isSharedGuest || !tablemates.length || teaRoom.local.state === "brewing"}>차 요청하기</button>
+            <button onClick={() => socialAction("pouring")} disabled={Boolean(isSharedGuest) || !tablemates.length || teaRoom.local.state === "brewing"}>차 따라주기</button>
+          </div>
         </aside>
       )}
 
