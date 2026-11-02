@@ -28,6 +28,8 @@ npm run dev
 
 `.openai/hosting.json`의 Site ID와 D1 바인딩을 유지한 채 Sites 빌드·패키징 워크플로로 배포합니다. 운영 D1 마이그레이션은 Sites가 배포 과정에서 적용합니다.
 
+Firebase Hosting은 무료 공개 주소를 제공하는 별칭으로 사용하며, `firebase.json`의 302 리디렉션을 통해 D1과 실시간 API가 동작하는 운영 Sites URL로 연결합니다.
+
 ## 테스트용 시간 강제
 
 URL에 `?time=day`, `?time=dusk`, `?time=night`를 추가하면 조명을 고정할 수 있습니다.

@@ -1,0 +1,17 @@
+{
+  "hosting": {
+    "public": "firebase-hosting",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ],
+    "redirects": [
+      {
+        "source": "/{,**}",
+        "destination": "https://chagyeong-tea-room.ugojee.chatgpt.site/",
+        "type": 302
+      }
+    ]
+  }
+}
