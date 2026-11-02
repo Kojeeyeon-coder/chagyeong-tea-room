@@ -149,17 +149,34 @@ button:focus-visible { outline: 2px solid #617760; outline-offset: 3px; }
   .topbar.mobile-open ~ .name-panel { top: 150px; }
   .room-panel { top: 96px; right: 10px; width: 178px; }
   .visitor-card { display: none; }
-  .action-dock { bottom: 10px; width: calc(100vw - 20px); grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .action-dock { bottom: calc(10px + env(safe-area-inset-bottom, 0px)); width: calc(100vw - 20px); grid-template-columns: repeat(4, minmax(0, 1fr)); }
   .action-dock button { min-height: 58px; }
   .action-dock button span { font-size: 10px; }
   .seat-choice { bottom: 86px; }
-  .shared-actions { left: 10px; right: 10px; bottom: 84px; z-index: 36; min-height: 54px; justify-content: center; padding: 7px 10px; }
+  .shared-actions { left: 10px; right: 10px; bottom: calc(84px + env(safe-area-inset-bottom, 0px)); z-index: 36; min-height: 54px; justify-content: center; padding: 7px 10px; }
   .shared-actions span { display: none; }
   .shared-action-buttons { display: grid; width: 100%; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; }
   .shared-actions button { display: block; min-height: 38px; padding: 9px 8px; font-size: 11px; }
   .shared-actions button:not(:disabled) { background: rgba(181,199,167,.48); color: #405644; }
-  .notice { bottom: 148px; max-width: calc(100vw - 32px); overflow: hidden; text-overflow: ellipsis; }
-  .tea-panel { left: 10px; right: 10px; top: auto; bottom: 86px; width: auto; max-height: 49vh; padding: 18px; border-radius: 22px; }
+  .notice { bottom: calc(148px + env(safe-area-inset-bottom, 0px)); max-width: calc(100vw - 32px); overflow: hidden; text-overflow: ellipsis; }
+  .tea-panel {
+    left: 10px;
+    right: 10px;
+    top: auto;
+    bottom: calc(86px + env(safe-area-inset-bottom, 0px));
+    z-index: 37;
+    width: auto;
+    max-height: min(58dvh, calc(100dvh - 176px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)));
+    padding: 18px 18px 22px;
+    border-radius: 22px;
+    overscroll-behavior: contain;
+    scroll-padding-bottom: 76px;
+  }
+  .tea-panel.has-shared-actions {
+    bottom: calc(148px + env(safe-area-inset-bottom, 0px));
+    max-height: min(52dvh, calc(100dvh - 238px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)));
+  }
+  .tea-panel .ritual-button { position: sticky; bottom: 0; z-index: 1; box-shadow: 0 8px 20px rgba(63,85,66,.18); }
   .tea-grid { grid-template-columns: repeat(7, minmax(45px, 1fr)); overflow-x: auto; }
   .tea-grid button { min-width: 45px; }
   .teaware-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }

@@ -347,7 +347,7 @@ export function ChagyeongApp() {
       )}
 
       {teaRoom.local.seatId && teaPanelOpen && (
-        <aside className="tea-panel" aria-label="차와 다구 선택">
+        <aside className={`tea-panel${currentSeat?.kind === "shared" ? " has-shared-actions" : ""}`} aria-label="차와 다구 선택">
           <div className="panel-heading"><div><p className="eyebrow">오늘의 찻상</p><h2>{teaRoom.local.ritual === "complete" ? "다음 차를 골라 주세요" : "차와 다구를 골라 주세요"}</h2></div><button className="panel-close" onClick={() => setTeaPanelOpen(false)} aria-label="차 선택 닫기">×</button></div>
           <div className="tea-grid" role="list" aria-label="차 종류">
             {TEAS.map((tea) => <button key={tea.id} className={teaRoom.local.tea === tea.id ? "selected" : ""} onClick={() => selectTea(tea.id)} disabled={teaRoom.local.ritual !== "idle" && teaRoom.local.ritual !== "complete"} style={{ "--tea-color": tea.color } as React.CSSProperties}><span>{tea.hanja}</span><strong>{tea.name}</strong></button>)}
