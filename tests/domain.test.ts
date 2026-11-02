@@ -53,10 +53,11 @@ test("기기 현지 시각과 강제 모드로 조명을 결정한다", () => {
   assert.equal(getTimeOfDay(new Date(), "night"), "night");
 });
 
-test("시적인 이름은 현재 방의 이름과 중복되지 않는다", () => {
+test("꽃 이름은 현재 방에서 중복되지 않는다", () => {
   assert.equal(POETIC_NAME_COUNT, 256);
   const first = choosePoeticName(new Set(), () => 0);
   const second = choosePoeticName(new Set([first]), () => 0);
-  assert.equal(first, "다원");
+  assert.equal(first, "하얀 동백");
+  assert.equal(second, "하얀 장미");
   assert.notEqual(second, first);
 });
