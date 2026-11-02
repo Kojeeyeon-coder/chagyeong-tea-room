@@ -76,16 +76,22 @@ function GardenWeather({ weather }: { weather: TeaRoomWeather }) {
   </points>;
 }
 
-function CameraRig({ target, focus, moving, seatId }: { target: React.RefObject<THREE.Group | null>; focus: boolean; moving: boolean; seatId: string | null }) {
+function CameraRig({ target, focus, seatId }: { target: React.RefObject<THREE.Group | null>; focus: boolean; seatId: string | null }) {
   const controls = useRef<any>(null);
   const aligned = useRef(false);
+  const previousTarget = useRef(new THREE.Vector3(Number.NaN, 0, 0));
+  const viewportWidth = useThree((state) => state.size.width);
+  const isMobile = viewportWidth <= 760;
   const activeSeat = seatId ? SEAT_POSITIONS.find((seat) => seat.id === seatId) : null;
   const activeTable = activeSeat ? TABLE_POSITIONS[activeSeat.table] : null;
   useEffect(() => { aligned.current = false; }, [focus, seatId]);
   useFrame(({ camera }, delta) => {
     if (!controls.current || !target.current) return;
+    const actuallyMoving = Number.isFinite(previousTarget.current.x) && previousTarget.current.distanceTo(target.current.position) > 0.002;
+    previousTarget.current.copy(target.current.position);
+    controls.current.enableRotate = !focus && !actuallyMoving;
     if (camera instanceof THREE.PerspectiveCamera) {
-      camera.fov = THREE.MathUtils.damp(camera.fov, focus ? 52 : 58, 3, delta);
+      camera.fov = THREE.MathUtils.damp(camera.fov, focus ? (isMobile ? 60 : 52) : (isMobile ? 62 : 58), 3, delta);
       camera.updateProjectionMatrix();
     }
     const desired = focus && activeSeat && activeTable
@@ -96,14 +102,14 @@ function CameraRig({ target, focus, moving, seatId }: { target: React.RefObject<
       )
       : target.current.position.clone().setY(0.72);
     controls.current.target.lerp(desired, 1 - Math.exp(-delta * 2.7));
-    if (!aligned.current || moving) {
+    if (!aligned.current || actuallyMoving) {
       let cameraTarget: THREE.Vector3;
       if (focus && activeSeat && activeTable) {
         const outward = new THREE.Vector3(activeSeat.x - activeTable.x, 0, activeSeat.z - activeTable.z).normalize();
         const sideways = new THREE.Vector3(-outward.z, 0, outward.x).multiplyScalar(0.45);
-        cameraTarget = new THREE.Vector3(activeTable.x, 3.05, activeTable.z).add(outward.multiplyScalar(-3.35)).add(sideways);
+        cameraTarget = new THREE.Vector3(activeTable.x, isMobile ? 3.35 : 3.05, activeTable.z).add(outward.multiplyScalar(isMobile ? -5.15 : -3.35)).add(sideways);
       } else {
-        cameraTarget = desired.clone().add(new THREE.Vector3(0, 3.25, 9.8));
+        cameraTarget = desired.clone().add(new THREE.Vector3(0, isMobile ? 3.55 : 3.25, isMobile ? 12.2 : 9.8));
       }
       cameraTarget.x = THREE.MathUtils.clamp(cameraTarget.x, -10.7, 10.7);
       cameraTarget.z = THREE.MathUtils.clamp(cameraTarget.z, -5.65, 11.9);
@@ -113,7 +119,7 @@ function CameraRig({ target, focus, moving, seatId }: { target: React.RefObject<
     controls.current.update();
     camera.position.y = THREE.MathUtils.clamp(camera.position.y, 1.65, 5.15);
   });
-  return <OrbitControls ref={controls} makeDefault enableDamping dampingFactor={0.055} enablePan={false} enableRotate={!focus && !moving} minDistance={focus ? 3.8 : 6.2} maxDistance={focus ? 22 : 32} minPolarAngle={1.2} maxPolarAngle={1.44} rotateSpeed={0.16} zoomSpeed={0.7} />;
+  return <OrbitControls ref={controls} makeDefault enableDamping dampingFactor={0.055} enablePan={false} enableZoom enableRotate={!focus} minDistance={focus ? 3.6 : 5.8} maxDistance={focus ? (isMobile ? 34 : 26) : (isMobile ? 40 : 34)} minPolarAngle={1.2} maxPolarAngle={1.44} rotateSpeed={0.16} zoomSpeed={0.95} />;
 }
 
 function Player({ identity, local, pathRef, positionRef, groupRef, queuedSeatRef, onMove, onArriveSeat }: {
@@ -323,6 +329,15 @@ function SideLandscape({ side }: { side: -1 | 1 }) {
   </group>;
 }
 
+function SideWall({ side }: { side: -1 | 1 }) {
+  const wallColor = "#e5ded1";
+  return <group>
+    <mesh castShadow receiveShadow position={[side * 13.82, 0.52, 0.2]}><boxGeometry args={[0.28, 1.05, 16.4]} /><meshStandardMaterial color={wallColor} roughness={0.96} /></mesh>
+    <mesh castShadow receiveShadow position={[side * 13.82, 4.38, 0.2]}><boxGeometry args={[0.28, 1.95, 16.4]} /><meshStandardMaterial color={wallColor} roughness={0.96} /></mesh>
+    {[[-6.02, 2.35], [-1.7, 1.35], [2.1, 1.35], [6.12, 1.78]].map(([z, width], index) => <mesh key={index} castShadow receiveShadow position={[side * 13.82, 2.1, z]}><boxGeometry args={[0.28, 2.25, width]} /><meshStandardMaterial color={wallColor} roughness={0.96} /></mesh>)}
+  </group>;
+}
+
 function CeilingStructure() {
   return <group position={[0, 1.85, 0]}>
     <mesh receiveShadow position={[0, 4.02, 0.35]}><boxGeometry args={[27.8, 0.12, 16.8]} /><meshStandardMaterial color="#4b372c" roughness={0.95} side={THREE.DoubleSide} /></mesh>
@@ -388,10 +403,10 @@ function TeaRoom({ mode }: { mode: TimeOfDay }) {
       <mesh position={[0, 2.75, -7.45]}><planeGeometry args={[28, 6.1]} /><meshBasicMaterial color="#d8d2c2" /></mesh>
       <mesh castShadow receiveShadow position={[0, 0.22, -7.18]}><boxGeometry args={[28, 0.55, 0.22]} /><meshStandardMaterial color="#f2eee4" /></mesh>
       <mesh castShadow receiveShadow position={[0, 3.5, -7.18]}><boxGeometry args={[28, 0.6, 0.22]} /><meshStandardMaterial color="#f2eee4" /></mesh>
-      <mesh castShadow receiveShadow position={[-13.85, 0.48, 0.2]}><boxGeometry args={[0.22, 1.12, 16.4]} /><meshStandardMaterial color="#e8e1d4" /></mesh>
-      <mesh castShadow receiveShadow position={[13.85, 0.48, 0.2]}><boxGeometry args={[0.22, 1.12, 16.4]} /><meshStandardMaterial color="#e8e1d4" /></mesh>
       <SideLandscape side={-1} />
       <SideLandscape side={1} />
+      <SideWall side={-1} />
+      <SideWall side={1} />
       {([-1, 1] as const).flatMap((side) => [-3.6, 0.2, 4].map((z) => <OctagonalWindow key={`${side}-${z}`} side={side} z={z} />))}
       <mesh castShadow receiveShadow position={[0, 0, 8]}><boxGeometry args={[28, 0.16, 2]} /><meshStandardMaterial color="#ad835f" roughness={0.9} /></mesh>
       <mesh castShadow position={[0, 0.09, 7]}><boxGeometry args={[28, 0.12, 0.13]} /><meshStandardMaterial color="#76543e" /></mesh>
@@ -511,13 +526,14 @@ function RemoteTeaServices({ people, localSessionId, room }: { people: PresenceS
     if (!seat) return null;
     const table = TABLE_POSITIONS[seat.table];
     const isHost = seat.kind === "solo" || room.tableHosts[String(seat.table)] === person.sessionId;
-    const offset = isHost ? teaServiceOffset(seat.id, seat.kind) : teaCupOffset(seat.id);
+    const usesOwnService = isHost || Boolean(person.teaware && person.ritual !== "idle");
+    const offset = usesOwnService ? teaServiceOffset(seat.id, seat.kind) : teaCupOffset(seat.id);
     const serviceRotation = seat.rotation;
     const host = people.find((candidate) => candidate.sessionId === room.tableHosts[String(seat.table)]);
     const teaColor = TEAS.find((tea) => tea.id === (isHost ? person.tea : host?.tea))?.color;
     const filled = !isHost && (person.state === "drinking" || person.ritual === "complete" || host?.state === "pouring");
     const surfaceY = seat.kind === "solo" ? 0.76 : 0.68;
-    return <group key={person.sessionId} position={[table.x + offset.x, surfaceY, table.z + offset.z]} rotation={[0, serviceRotation, 0]}>{isHost && person.teaware
+    return <group key={person.sessionId} position={[table.x + offset.x, surfaceY, table.z + offset.z]} rotation={[0, serviceRotation, 0]}>{usesOwnService && person.teaware
       ? <TeaService kind={person.teaware} ritual={person.ritual} color={teaColor} socialPour={person.state === "pouring"} />
       : <GuestCup color={teaColor} filled={filled} />}</group>;
   })}</>;
@@ -589,19 +605,20 @@ function World(props: SceneProps) {
         if (!seat) return null;
         const table = TABLE_POSITIONS[seat.table];
         const isHost = seat.kind === "solo" || props.room.tableHosts[String(seat.table)] === props.identity.sessionId;
-        const offset = isHost ? teaServiceOffset(seat.id, seat.kind) : teaCupOffset(seat.id);
+        const usesOwnService = isHost || Boolean(props.local.teaware && props.local.ritual !== "idle");
+        const offset = usesOwnService ? teaServiceOffset(seat.id, seat.kind) : teaCupOffset(seat.id);
         const serviceRotation = seat.rotation;
         const host = scenePeople.find((person) => person.sessionId === props.room.tableHosts[String(seat.table)]);
         const teaColor = TEAS.find((tea) => tea.id === (isHost ? props.local.tea : host?.tea))?.color;
         const filled = !isHost && (props.local.state === "drinking" || props.local.ritual === "complete" || host?.state === "pouring");
         const surfaceY = seat.kind === "solo" ? 0.76 : 0.68;
-        return <group position={[table.x + offset.x, surfaceY, table.z + offset.z]} rotation={[0, serviceRotation, 0]}>{isHost && props.local.teaware
+        return <group position={[table.x + offset.x, surfaceY, table.z + offset.z]} rotation={[0, serviceRotation, 0]}>{usesOwnService && props.local.teaware
           ? <TeaService kind={props.local.teaware} ritual={props.local.ritual} color={teaColor} socialPour={props.local.state === "pouring"} />
           : <GuestCup color={teaColor} filled={filled} />}</group>;
       })()}
       <RemoteTeaServices people={scenePeople} localSessionId={props.identity.sessionId} room={props.room} />
       <SharedPourActions people={scenePeople} room={props.room} />
-      <CameraRig target={playerRef} focus={Boolean(props.local.seatId)} moving={props.local.state === "walking"} seatId={props.local.seatId} />
+      <CameraRig target={playerRef} focus={Boolean(props.local.seatId)} seatId={props.local.seatId} />
     </>
   );
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Armchair, Camera, ChevronDown, CloudRain, Coffee, CupSoda, Leaf, Moon, Pencil, Rabbit as RabbitIcon, Snowflake, Sparkles, Sun, Users, Volume2, VolumeX } from "lucide-react";
+import { Armchair, Camera, ChevronDown, CloudRain, Coffee, CupSoda, Leaf, Menu, Moon, Pencil, Rabbit as RabbitIcon, Snowflake, Sparkles, Sun, Users, Volume2, VolumeX, X } from "lucide-react";
 import { TEAS, TEAWARE, RITUAL_COPY } from "@/lib/catalog";
 import { getTimeOfDay, type TimeOfDay } from "@/lib/time-of-day";
 import { SEAT_POSITIONS } from "@/lib/navigation";
@@ -45,6 +45,7 @@ export function ChagyeongApp() {
   const [seatPanelOpen, setSeatPanelOpen] = useState(false);
   const [namePanelOpen, setNamePanelOpen] = useState(false);
   const [roomPanelOpen, setRoomPanelOpen] = useState(false);
+  const [mobileTopOpen, setMobileTopOpen] = useState(false);
   const [nameDraft, setNameDraft] = useState("");
   const [pourReady, setPourReady] = useState(false);
   const [seatRequest, setSeatRequest] = useState<{ seatId: string; nonce: number } | null>(null);
@@ -258,8 +259,9 @@ export function ChagyeongApp() {
         <TeaRoomScene identity={identity} local={teaRoom.local} room={teaRoom.room} timeOfDay={timeOfDay} weather={weather} seatRequest={seatRequest} onMove={teaRoom.updateLocal} onClaimSeat={teaRoom.claimSeat} onNotice={showNotice} />
       </section>
 
-      <header className="topbar">
+      <header className={`topbar ${mobileTopOpen ? "mobile-open" : ""}`}>
         <div className="brand-lockup"><span className="mini-seal"><Leaf size={15} /></span><div><strong>차경</strong><small>茶境</small></div></div>
+        <button className="mobile-menu-toggle" onClick={() => { setMobileTopOpen((open) => !open); setRoomPanelOpen(false); }} aria-expanded={mobileTopOpen} aria-label={mobileTopOpen ? "상단 메뉴 접기" : "상단 메뉴 펼치기"}>{mobileTopOpen ? <X size={17} /> : <Menu size={17} />}</button>
         <div className="room-actions">
           <button className="room-switch" onClick={() => setRoomPanelOpen((open) => !open)} aria-expanded={roomPanelOpen} aria-label="다실 서버 선택">
             <Leaf size={14} /><span>{ROOM_NAMES[identity.roomId]}</span><ChevronDown size={13} />
@@ -312,12 +314,11 @@ export function ChagyeongApp() {
         <button onClick={teaRoom.greet}><Sparkles size={19} /><span>인사하기</span></button>
         <button className={teaRoom.local.seatId ? "active" : ""} onClick={() => teaRoom.local.seatId ? requestSeatByKind(currentSeat?.kind ?? "solo") : setSeatPanelOpen((open) => !open)} disabled={!teaRoom.local.seatId && teaRoom.connection !== "online"}><Armchair size={19} /><span>{teaRoom.local.seatId ? "일어나기" : "자리에 앉기"}</span></button>
         <button className={teaPanelOpen || teaRoom.local.state === "brewing" || teaRoom.local.state === "requesting" ? "active" : ""} onClick={() => {
-          if (isSharedGuest) socialAction("requesting");
-          else if (teaRoom.local.ritual === "complete") setTeaPanelOpen(true);
+          if (teaRoom.local.ritual === "complete") setTeaPanelOpen(true);
           else if (!teaRoom.local.tea || !teaRoom.local.teaware) setTeaPanelOpen(true);
           else void startBrewing();
-        }} disabled={!teaRoom.local.seatId || (!isSharedGuest && ["preparing", "brewing", "serving", "sipping"].includes(teaRoom.local.ritual))}><Coffee size={19} /><span>{isSharedGuest ? "차 요청하기" : ["preparing", "brewing"].includes(teaRoom.local.ritual) ? "우리는 중" : teaRoom.local.ritual === "complete" ? "한 잔 더" : "차 우리기"}</span></button>
-        <button className={teaRoom.local.state === "drinking" ? "active" : ""} onClick={isSharedGuest ? drinkSharedTea : drinkTea} disabled={isSharedGuest ? !sharedPourReady : teaRoom.local.ritual !== "serving" || !pourReady}><CupSoda size={19} /><span>차 마시기</span></button>
+        }} disabled={!teaRoom.local.seatId || ["preparing", "brewing", "serving", "sipping"].includes(teaRoom.local.ritual)}><Coffee size={19} /><span>{["preparing", "brewing"].includes(teaRoom.local.ritual) ? "우리는 중" : teaRoom.local.ritual === "complete" ? "한 잔 더" : "차 우리기"}</span></button>
+        <button className={teaRoom.local.state === "drinking" ? "active" : ""} onClick={teaRoom.local.ritual === "serving" && pourReady ? drinkTea : drinkSharedTea} disabled={!((teaRoom.local.ritual === "serving" && pourReady) || sharedPourReady)}><CupSoda size={19} /><span>차 마시기</span></button>
       </nav>
 
       {!teaRoom.local.seatId && seatPanelOpen && (
@@ -330,8 +331,9 @@ export function ChagyeongApp() {
       {currentSeat?.kind === "shared" && (
         <aside className="shared-actions" aria-label="합석 행동">
           <span>{tablemates.length ? `${tablemates.length + 1}마리가 함께 머무는 중` : "누군가 오기를 기다리는 중"}</span>
-          <button onClick={() => socialAction("requesting")} disabled={!tablemates.length || teaRoom.local.state === "brewing"}>차 요청하기</button>
-          <button onClick={() => socialAction("pouring")} disabled={!tablemates.length || teaRoom.local.state === "brewing"}>차 따라주기</button>
+          {isSharedGuest
+            ? <button onClick={() => socialAction("requesting")} disabled={!tablemates.length || teaRoom.local.state === "brewing"}>차 요청하기</button>
+            : <button onClick={() => socialAction("pouring")} disabled={!tablemates.length || teaRoom.local.state === "brewing"}>차 따라주기</button>}
         </aside>
       )}
 
