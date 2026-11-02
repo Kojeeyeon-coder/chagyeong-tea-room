@@ -2,6 +2,8 @@
 
 가입 없이 토끼가 되어 차를 마시며 잠시 머무는 3D 온라인 다실입니다. React 19, React Three Fiber, Vinext, Cloudflare Workers와 D1으로 동작합니다.
 
+공개 서비스: [chagyeong-tea-room.ugojee.chatgpt.site](https://chagyeong-tea-room.ugojee.chatgpt.site/)
+
 ## 로컬 실행
 
 ```bash
