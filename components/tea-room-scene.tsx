@@ -198,7 +198,7 @@ function LocalNameTag({ target }: { target: React.RefObject<THREE.Group | null> 
 }
 
 function TableFlower({ solo = false }: { solo?: boolean }) {
-  return <group position={[0, solo ? 0.76 : 0.68, solo ? -0.36 : 0]} scale={solo ? 0.7 : 0.78}>
+  return <group position={[0, solo ? 0.76 : 0.68, solo ? -0.36 : 0]} scale={solo ? 0.7 : 0.56}>
     <mesh castShadow scale={[1, 0.9, 1]}><sphereGeometry args={[0.16, 12, 9]} /><meshStandardMaterial color="#f1eee4" roughness={0.88} /></mesh>
     <mesh position={[0, 0.12, 0]}><cylinderGeometry args={[0.075, 0.1, 0.1, 12]} /><meshStandardMaterial color="#ebe7dc" /></mesh>
     {[[-0.055, 0.32, -0.08], [0.045, 0.38, 0.06], [0.01, 0.29, 0.12]].map(([x, y, turn], index) => <group key={index} position={[x, y, 0]} rotation={[0, 0, turn]}>
@@ -447,7 +447,9 @@ function teaServiceOffset(seatId: string, kind: "shared" | "solo") {
   const seat = SEAT_POSITIONS.find((candidate) => candidate.id === seatId);
   if (!seat) return { x: 0, z: 0 };
   const table = TABLE_POSITIONS[seat.table];
-  const factor = kind === "solo" ? 0.22 : 0.24;
+  // 합석상에서는 각 다구를 상 중앙이 아니라 해당 토끼 바로 앞 가장자리로 당긴다.
+  // 네 좌석이 모두 각자 차를 우려도 세트와 중앙 다화가 겹치지 않는 거리다.
+  const factor = kind === "solo" ? 0.22 : 0.68;
   return { x: (seat.x - table.x) * factor, z: (seat.z - table.z) * factor };
 }
 
@@ -533,7 +535,7 @@ function RemoteTeaServices({ people, localSessionId, room }: { people: PresenceS
     const teaColor = TEAS.find((tea) => tea.id === (isHost ? person.tea : host?.tea))?.color;
     const filled = !isHost && (person.state === "drinking" || person.ritual === "complete" || host?.state === "pouring");
     const surfaceY = seat.kind === "solo" ? 0.76 : 0.68;
-    return <group key={person.sessionId} position={[table.x + offset.x, surfaceY, table.z + offset.z]} rotation={[0, serviceRotation, 0]}>{usesOwnService && person.teaware
+    return <group key={person.sessionId} position={[table.x + offset.x, surfaceY, table.z + offset.z]} rotation={[0, serviceRotation, 0]} scale={usesOwnService && seat.kind === "shared" ? 0.66 : 1}>{usesOwnService && person.teaware
       ? <TeaService kind={person.teaware} ritual={person.ritual} color={teaColor} socialPour={person.state === "pouring"} />
       : <GuestCup color={teaColor} filled={filled} />}</group>;
   })}</>;
@@ -612,7 +614,7 @@ function World(props: SceneProps) {
         const teaColor = TEAS.find((tea) => tea.id === (isHost ? props.local.tea : host?.tea))?.color;
         const filled = !isHost && (props.local.state === "drinking" || props.local.ritual === "complete" || host?.state === "pouring");
         const surfaceY = seat.kind === "solo" ? 0.76 : 0.68;
-        return <group position={[table.x + offset.x, surfaceY, table.z + offset.z]} rotation={[0, serviceRotation, 0]}>{usesOwnService && props.local.teaware
+        return <group position={[table.x + offset.x, surfaceY, table.z + offset.z]} rotation={[0, serviceRotation, 0]} scale={usesOwnService && seat.kind === "shared" ? 0.66 : 1}>{usesOwnService && props.local.teaware
           ? <TeaService kind={props.local.teaware} ritual={props.local.ritual} color={teaColor} socialPour={props.local.state === "pouring"} />
           : <GuestCup color={teaColor} filled={filled} />}</group>;
       })()}
