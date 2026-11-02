@@ -141,7 +141,7 @@ export function TeaService({ kind, ritual, color = "#9b744b", socialPour = false
         <mesh position={[0, 0.18, 0]}><cylinderGeometry args={[0.145, 0.145, 0.016, 14]} /><meshStandardMaterial color={liquidColor} transparent opacity={0.9} /></mesh>
         <mesh position={[0, 0.188, 0]} rotation={[Math.PI / 2, 0, 0]}><torusGeometry args={[0.17, 0.016, 7, 14]} /><meshStandardMaterial color="#f0f7f4" transparent opacity={0.95} roughness={0.14} /></mesh>
       </group>
-      <group position={[0.62, -0.09, -0.12]}>
+      <group position={[0.62, -0.09, -0.12]} visible={ritual !== "sipping"}>
         <mesh castShadow><cylinderGeometry args={[0.17, 0.12, 0.2, 14]} /><meshStandardMaterial color="#eee8dd" /></mesh>
         <mesh position={[0, 0.11, 0]}><cylinderGeometry args={[0.115, 0.115, 0.018, 14]} /><meshStandardMaterial color={liquidColor} /></mesh>
         <mesh position={[0, 0.115, 0]} rotation={[Math.PI / 2, 0, 0]}><torusGeometry args={[0.145, 0.014, 6, 14]} /><meshStandardMaterial color="#9b806b" roughness={0.8} /></mesh>

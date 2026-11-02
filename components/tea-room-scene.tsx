@@ -76,7 +76,7 @@ function GardenWeather({ weather }: { weather: TeaRoomWeather }) {
   </points>;
 }
 
-function CameraRig({ target, focus, seatId }: { target: React.RefObject<THREE.Group | null>; focus: boolean; seatId: string | null }) {
+function CameraRig({ target, focus, seatId, allowFocusRotate }: { target: React.RefObject<THREE.Group | null>; focus: boolean; seatId: string | null; allowFocusRotate: boolean }) {
   const controls = useRef<any>(null);
   const aligned = useRef(false);
   const previousTarget = useRef(new THREE.Vector3(Number.NaN, 0, 0));
@@ -89,7 +89,7 @@ function CameraRig({ target, focus, seatId }: { target: React.RefObject<THREE.Gr
     if (!controls.current || !target.current) return;
     const actuallyMoving = Number.isFinite(previousTarget.current.x) && previousTarget.current.distanceTo(target.current.position) > 0.002;
     previousTarget.current.copy(target.current.position);
-    controls.current.enableRotate = !focus && !actuallyMoving;
+    controls.current.enableRotate = (!focus || allowFocusRotate) && !actuallyMoving;
     if (camera instanceof THREE.PerspectiveCamera) {
       camera.fov = THREE.MathUtils.damp(camera.fov, focus ? (isMobile ? 60 : 52) : (isMobile ? 62 : 58), 3, delta);
       camera.updateProjectionMatrix();
@@ -119,7 +119,7 @@ function CameraRig({ target, focus, seatId }: { target: React.RefObject<THREE.Gr
     controls.current.update();
     camera.position.y = THREE.MathUtils.clamp(camera.position.y, 1.65, 5.15);
   });
-  return <OrbitControls ref={controls} makeDefault enableDamping dampingFactor={0.055} enablePan={false} enableZoom enableRotate={!focus} minDistance={focus ? 3.6 : 5.8} maxDistance={focus ? (isMobile ? 34 : 26) : (isMobile ? 40 : 34)} minPolarAngle={1.2} maxPolarAngle={1.44} rotateSpeed={0.16} zoomSpeed={0.95} />;
+  return <OrbitControls ref={controls} makeDefault enableDamping dampingFactor={0.055} enablePan={false} enableZoom enableRotate={!focus || allowFocusRotate} minDistance={focus ? 3.6 : 5.8} maxDistance={focus ? (isMobile ? 34 : 26) : (isMobile ? 40 : 34)} minPolarAngle={1.2} maxPolarAngle={1.44} rotateSpeed={focus ? 0.11 : 0.16} zoomSpeed={0.95} />;
 }
 
 function Player({ identity, local, pathRef, positionRef, groupRef, queuedSeatRef, onMove, onArriveSeat }: {
@@ -602,7 +602,7 @@ function World(props: SceneProps) {
       {props.room.people.filter((person) => person.sessionId !== props.identity.sessionId).map((person) => (
         <Rabbit key={person.sessionId} variant={person.variant} name={person.displayName} state={person.state} ritual={person.ritual} teaware={person.teaware} teaColor={TEAS.find((tea) => tea.id === person.tea)?.color} position={person.position} rotation={person.rotation} />
       ))}
-      {props.local.seatId && props.local.ritual !== "sipping" && (() => {
+      {props.local.seatId && (() => {
         const seat = SEAT_POSITIONS.find((candidate) => candidate.id === props.local.seatId);
         if (!seat) return null;
         const table = TABLE_POSITIONS[seat.table];
@@ -620,7 +620,7 @@ function World(props: SceneProps) {
       })()}
       <RemoteTeaServices people={scenePeople} localSessionId={props.identity.sessionId} room={props.room} />
       <SharedPourActions people={scenePeople} room={props.room} />
-      <CameraRig target={playerRef} focus={Boolean(props.local.seatId)} seatId={props.local.seatId} />
+      <CameraRig target={playerRef} focus={Boolean(props.local.seatId)} seatId={props.local.seatId} allowFocusRotate={props.local.state === "drinking"} />
     </>
   );
 }

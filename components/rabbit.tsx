@@ -110,8 +110,8 @@ export function Rabbit({ variant, name, state, position, rotation, ritual = "idl
         <group ref={cup} visible={isDrinking} position={[0, 1.25, 0.5]} scale={0.95}>
           {teaware === "matchaSet" ? <>
             <mesh castShadow><cylinderGeometry args={[0.28, 0.2, 0.22, 18]} /><meshStandardMaterial color="#eee8dc" roughness={0.88} /></mesh>
-            <mesh position={[0, 0.12, 0]}><cylinderGeometry args={[0.22, 0.22, 0.018, 18]} /><meshStandardMaterial color="#91aa68" /></mesh>
-            <mesh position={[0, 0.125, 0]} rotation={[Math.PI / 2, 0, 0]}><torusGeometry args={[0.245, 0.018, 6, 18]} /><meshStandardMaterial color="#788762" roughness={0.8} /></mesh>
+            <mesh position={[0, 0.12, 0]}><cylinderGeometry args={[0.22, 0.22, 0.018, 18]} /><meshStandardMaterial color={teaColor} /></mesh>
+            <mesh position={[0, 0.125, 0]} rotation={[Math.PI / 2, 0, 0]}><torusGeometry args={[0.245, 0.018, 6, 18]} /><meshStandardMaterial color="#9a866e" roughness={0.8} /></mesh>
           </> : <>
             <mesh castShadow><cylinderGeometry args={[0.13, 0.1, 0.18, 14]} /><meshStandardMaterial color="#f6f1e8" roughness={0.8} /></mesh>
             <mesh position={[0, 0.095, 0]}><cylinderGeometry args={[0.09, 0.09, 0.015, 14]} /><meshStandardMaterial color={teaColor} /></mesh>
